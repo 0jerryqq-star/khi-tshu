@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>khi-tshu 蓋厝</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#1c2026"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="khi-tshu"><meta name="robots" content="noindex,nofollow">
+<style>
+html,body{margin:0;height:100%;background:#1e2228;color:#eee;font-family:system-ui,"Microsoft JhengHei","PingFang TC",sans-serif;overflow:hidden;touch-action:none}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+#lab{pointer-events:none}
+#top{position:fixed;left:8px;top:8px;right:8px;display:flex;flex-direction:column;gap:6px;pointer-events:none;z-index:2}
+#top>*{pointer-events:auto}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.t{background:#2c323b;border:1px solid #444c57;color:#eee;border-radius:8px;padding:7px 10px;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;min-height:20px}
+.t.off{opacity:.4}.t.on{background:#3a5a8a;border-color:#6b93cf}
+.t.warn{background:#6a3a2a;border-color:#c86}
+.lay{display:flex;border:1px solid #444c57;border-radius:8px;overflow:hidden}
+.lay .t{border:0;border-radius:0}
+.lay .lk{padding:7px 8px;border-left:1px solid #444c57}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+#q{flex:1;min-width:150px;max-width:380px;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid #556;background:#14171c;color:#fff}
+#cnt{font-size:13px;color:#ffd84d}
+#res{max-height:30vh;overflow:auto;background:rgba(20,23,28,.96);border:1px solid #444c57;border-radius:8px;display:none;max-width:460px}
+#res div{padding:8px 10px;border-bottom:1px solid #333a44;font-size:14px;cursor:pointer}
+#res b{color:#ffd84d}
+#info{position:fixed;left:8px;bottom:8px;background:rgba(20,23,28,.96);border:1px solid #556;border-radius:10px;padding:10px 12px;font-size:15px;display:none;z-index:3;max-width:min(560px,calc(100% - 40px))}
+#info .c{font-size:20px;font-weight:700;color:#ffd84d}
+#ed{margin-top:8px;display:none;flex-direction:column;gap:6px}
+#ed .row .t{padding:6px 9px}
+.ax{font-weight:700;min-width:22px;justify-content:center}
+.ax.x{color:#ff7b7b}.ax.y{color:#7bff9b}.ax.z{color:#7bb8ff}
+.num{width:78px;font-size:16px;padding:5px;border-radius:6px;border:1px solid #556;background:#14171c;color:#fff}
+#help{position:fixed;right:10px;bottom:10px;font-size:12px;color:#99a;text-align:right;line-height:1.5;pointer-events:none}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:9;align-items:center;justify-content:center}
+#modal .box{background:#232830;border:1px solid #556;border-radius:12px;padding:14px;width:min(460px,92vw);max-height:84vh;overflow:auto}
+#modal h3{margin:0 0 10px;font-size:18px}
+#modal input[type=text]{font-size:16px;padding:7px;border-radius:6px;border:1px solid #556;background:#14171c;color:#fff;flex:1}
+.sv{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #333a44;flex-wrap:wrap}
+.sv .n{flex:1;min-width:120px}
+.sv small{color:#9aa}
+#toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:rgba(0,0,0,.8);padding:10px 16px;border-radius:10px;font-size:15px;display:none;z-index:10}
+</style></head><body>
+<div id="gate" style="position:fixed;inset:0;z-index:20;background:#16191e;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+ <div style="font-size:64px">🧩</div><div style="font-size:22px;font-weight:700">khi-tshu 蓋厝</div>
+ <input id="pw" type="password" inputmode="numeric" placeholder="請輸入密碼" style="font-size:20px;padding:10px;border-radius:10px;border:1px solid #556;background:#0f1114;color:#fff;width:200px;text-align:center">
+ <div class="t on" id="pwb" style="font-size:17px;padding:10px 26px">進入</div><div id="pwm" style="color:#f77;height:20px"></div></div>
+<div id="loading" style="position:fixed;inset:0;z-index:15;background:#1e2228;display:none;align-items:center;justify-content:center;font-size:18px;color:#aab">讀取中…</div>
+<canvas id="c"></canvas><canvas id="lab"></canvas>
+<div id="top">
+ <div class="row">
+  <select id="room" style="font-size:16px;padding:7px 8px;border-radius:8px;background:#2c323b;color:#fff;border:1px solid #6b93cf;max-width:170px"></select>
+  <div class="t on" id="mView">👁 預覽</div><div class="t" id="mEdit">✏️ 編輯</div>
+  <input id="q" placeholder="搜尋編號或尺寸，例如 U-W1-21、FWR 2440" autocomplete="off"><span id="cnt"></span><div class="t" id="clr">✕</div>
+ </div>
+ <div id="res"></div>
+ <div class="row" id="bar"></div>
+ <div class="row" id="ebar" style="display:none"></div>
+</div>
+<div id="info"><div id="infoT"></div>
+ <div id="ed">
+  <div class="row" style="font-size:13px;color:#9aa">按住紅綠藍箭頭拖曳＝沿那個方向移動・Shift＋點＝多選</div>
+  <div class="row">
+   <div class="t ax x" data-a="0">X 左右</div><div class="t ax y" data-a="1">Y 前後</div><div class="t ax z on" data-a="2">Z 上下</div>
+   <span style="font-size:13px;color:#9aa">每步</span>
+   <select id="step" class="num" style="width:80px"><option>5</option><option selected>10</option><option>50</option><option>100</option><option>500</option></select>
+   <div class="t" id="minus">－</div><div class="t" id="plus">＋</div>
+  </div>
+  <div class="row" style="font-size:14px">
+   位移 X<input class="num" id="ox" type="number" step="5"> Y<input class="num" id="oy" type="number" step="5"> Z<input class="num" id="oz" type="number" step="5">
+  </div>
+  <div class="row" id="unk" style="display:none;font-size:14px;flex-wrap:wrap">未知料可改：編號<input class="num" id="nm" type="text" style="width:120px" placeholder="自己填">
+   長X<input class="num" id="dx" type="number" step="5"> 寬Y<input class="num" id="dy" type="number" step="5"> 高Z<input class="num" id="dz" type="number" step="5"></div>
+  <div class="row"><div class="t" id="resetOne">↺ 選取的歸位</div><div class="t" id="desel">✕ 取消選取</div></div>
+ </div>
+</div>
+<div id="help"><span id="ttl"></span><br><span style="color:#f6a">■</span> 粉紅＝編號推測　<span style="color:#f66">■</span> 紅點＝只有標籤沒畫板<br>單指拖曳＝旋轉　雙指＝縮放／平移　點一下＝選取</div>
+<div id="modal"><div class="box" id="mbox"></div></div>
+<div id="toast"></div>
+<input type="file" id="file" accept=".json,application/json" style="display:none">
+<script>
+const ROOMNAME=r=>/^[A-Z]$/.test(r)?r+' 房':r;
+function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.getItem('khi_ok')==='1'}catch(e){}
+ if(pass)return ok();const g=document.getElementById('gate');g.style.display='flex';const i=document.getElementById('pw');
+ const go=()=>{if(i.value.trim()==='520'){try{localStorage.setItem('khi_ok','1')}catch(e){}g.style.display='none';ok()}else{document.getElementById('pwm').textContent='密碼不對';i.value='';i.focus()}};
+ document.getElementById('pwb').onclick=go;i.addEventListener('keydown',e=>{if(e.key==='Enter')go()});setTimeout(()=>i.focus(),100)})}
+(async()=>{
+ await gate();
+ const load=document.getElementById('loading');load.style.display='flex';
+ let idx;try{idx=await (await fetch('rooms/index.json')).json()}catch(e){load.textContent='讀不到房間清單，請連網後再開一次';return}
+ let R=decodeURIComponent(location.hash.slice(1));let last=null;try{last=localStorage.getItem('khi_room')}catch(e){}
+ if(!idx.rooms.some(x=>x.id===R))R=idx.rooms.some(x=>x.id===last)?last:(idx.rooms.find(x=>x.id==='U')||idx.rooms[0]).id;
+ try{localStorage.setItem('khi_room',R)}catch(e){}
+ const sel=document.getElementById('room');sel.innerHTML=idx.rooms.map(x=>`<option value="${x.id}"${x.id===R?' selected':''}>${ROOMNAME(x.id)}（${x.n} 塊）</option>`).join('');
+ sel.onchange=()=>{location.hash=sel.value;location.reload()};
+ let D;try{D=await (await fetch('rooms/'+encodeURIComponent(R)+'.json')).json()}catch(e){load.textContent='讀不到這間房的資料，請連網後再開一次';return}
+ load.style.display='none';document.getElementById('ttl').textContent=idx.floor+'・'+ROOMNAME(R);
+ start(D);
+ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+function start(D){
+const ROOM=D.room, LSKEY='formwork3d_'+ROOM;
+const SHEET={wall:['牆板','#8fb3d9'],k:['K板','#ff9a3c'],beam:['梁板','#7bd389'],deck:['頂板','#e8d36a']};
+const SN={wall:'牆板',k:'K板',beam:'梁板',deck:'頂板'};
+const HOW={direct:'',leader:'標籤用引線指到這塊',near:'標籤寫在板子外面，依位置和尺寸配對',stack:'同一格疊放的第二塊',ext:'延伸板，疊在原牆板上方',guess:'圖上沒寫編號，依前後順序推測（未確認）',orphan:'圖上只有標籤、沒畫板子，這個紅點是標籤的位置',none:'圖上沒有編號'};
+const STRUCT_COL='#7a7f88';
+const show={wall:1,k:1,beam:1,deck:1,struct:0,labels:1};
+const lock={wall:0,k:0,beam:0,deck:0};
+let gz=null,gzHover=-1;let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
+const cv=document.getElementById('c'),gl=cv.getContext('webgl',{antialias:true});
+const lc=document.getElementById('lab'),lx=lc.getContext('2d');
+const toastEl=document.getElementById('toast');let tt=0;function toast(s){toastEl.textContent=s;toastEl.style.display='block';clearTimeout(tt);tt=setTimeout(()=>toastEl.style.display='none',1600)}
+const hex=h=>[parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255];
+function tri(p){const n=p.length,idx=[...Array(n).keys()],out=[];
+ const cr=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+ const inT=(q,a,b,c)=>cr(a,b,q)>=0&&cr(b,c,q)>=0&&cr(c,a,q)>=0;
+ let g=0;while(idx.length>3&&g++<5000){let ok=false;
+  for(let i=0;i<idx.length;i++){const ia=idx[(i+idx.length-1)%idx.length],ib=idx[i],ic=idx[(i+1)%idx.length];const a=p[ia],b=p[ib],c=p[ic];
+   if(cr(a,b,c)<=0)continue;let e=true;for(const j of idx){if(j===ia||j===ib||j===ic)continue;if(inT(p[j],a,b,c)){e=false;break}}
+   if(e){out.push([ia,ib,ic]);idx.splice(i,1);ok=true;break}}
+  if(!ok)break}
+ if(idx.length===3)out.push(idx.slice());return out}
+function prism(p,z0,z1,cb){
+ for(const t of tri(p)){const [a,b,c]=t.map(i=>p[i]);cb(a[0],a[1],z1,0,0,1);cb(b[0],b[1],z1,0,0,1);cb(c[0],c[1],z1,0,0,1);cb(a[0],a[1],z0,0,0,-1);cb(c[0],c[1],z0,0,0,-1);cb(b[0],b[1],z0,0,0,-1)}
+ for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];let nx=b[1]-a[1],ny=-(b[0]-a[0]);const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+  cb(a[0],a[1],z0,nx,ny,0);cb(b[0],b[1],z0,nx,ny,0);cb(b[0],b[1],z1,nx,ny,0);cb(a[0],a[1],z0,nx,ny,0);cb(b[0],b[1],z1,nx,ny,0);cb(a[0],a[1],z1,nx,ny,0)}}
+function edges(p,z0,z1,arr){for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];arr.push(a[0],a[1],z0,b[0],b[1],z0,a[0],a[1],z1,b[0],b[1],z1,a[0],a[1],z0,a[0],a[1],z1)}}
+// ---------- panels ----------
+const PN=D.panels;
+const off=PN.map(()=>[0,0,0]),scl=PN.map(()=>[1,1,1]),names=PN.map(()=>null);
+const UNK=new Set(['none','guess','orphan']);
+const dcode=i=>names[i]||PN[i].code;
+PN.forEach((p,i)=>{p.code=p.code||'';const xs=p.p.map(q=>q[0]),ys=p.p.map(q=>q[1]);p.b0=[Math.min(...xs),Math.min(...ys),p.z[0]];p.b1=[Math.max(...xs),Math.max(...ys),p.z[1]];p.id=i;
+ p.key=(p.code.replace('？','')+' '+p.size).toUpperCase().replace(/\s+/g,' ')});
+const boxAt=(i,o,s)=>{const p=PN[i];o=o||off[i];s=s||scl[i];return [p.b0.map((v,k)=>v+o[k]),p.b0.map((v,k)=>v+(p.b1[k]-v)*s[k]+o[k])]};
+const bmin=i=>boxAt(i)[0],bmax=i=>boxAt(i)[1];
+const dims=i=>{const [a,b]=boxAt(i);return [0,1,2].map(k=>Math.round(b[k]-a[k]))};
+const ctr=i=>{const a=bmin(i),b=bmax(i);return [(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]};
+const basePos=[],nor=[],pid=[],baseE=[];const pR=[],eR=[];
+PN.forEach((p,i)=>{const st=basePos.length/3;prism(p.p,p.z[0],p.z[1],(x,y,z,a,b,c)=>{basePos.push(x,y,z);nor.push(a,b,c);pid.push(i)});pR.push([st,basePos.length/3-st]);
+ const es=baseE.length/3;edges(p.p,p.z[0],p.z[1],baseE);eR.push([es,baseE.length/3-es])});
+const B0=new Float32Array(basePos),E0=new Float32Array(baseE);
+const POS=new Float32Array(B0),EP=new Float32Array(E0);
+const NV=POS.length/3,colArr=new Float32Array(NV*4);
+const spos=[],snor=[];for(const s of D.struct)prism(s.p,s.z[0],s.z[1],(x,y,z,a,b,c)=>{spos.push(x,y,z);snor.push(a,b,c)});
+function mk(a,dyn){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,a instanceof Float32Array?a:new Float32Array(a),dyn?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);return b}
+const B={pos:mk(POS,1),nor:mk(nor),col:gl.createBuffer(),pe:mk(EP,1),spos:mk(spos),snor:mk(snor)};
+const idc=new Float32Array(NV*3);for(let v=0;v<NV;v++){const k=pid[v]+1;idc[v*3]=(k&255)/255;idc[v*3+1]=((k>>8)&255)/255;idc[v*3+2]=((k>>16)&255)/255}
+B.idc=mk(idc);
+const FL=[[0,0],[D.w,0],[D.w,D.h],[0,D.h]];const fpos=[],fnor=[];prism(FL,-120,0,(x,y,z,a,b,c)=>{fpos.push(x,y,z);fnor.push(a,b,c)});B.fpos=mk(fpos);B.fnor=mk(fnor);
+function applyOff(i){const [st,n]=pR[i],o=off[i],s=scl[i],b=PN[i].b0;for(let v=st;v<st+n;v++)for(let k=0;k<3;k++)POS[v*3+k]=b[k]+(B0[v*3+k]-b[k])*s[k]+o[k];
+ gl.bindBuffer(gl.ARRAY_BUFFER,B.pos);gl.bufferSubData(gl.ARRAY_BUFFER,st*12,POS.subarray(st*3,(st+n)*3));
+ const [es,en]=eR[i];for(let v=es;v<es+en;v++)for(let k=0;k<3;k++)EP[v*3+k]=b[k]+(E0[v*3+k]-b[k])*s[k]+o[k];
+ gl.bindBuffer(gl.ARRAY_BUFFER,B.pe);gl.bufferSubData(gl.ARRAY_BUFFER,es*12,EP.subarray(es*3,(es+en)*3))}
+// ---------- shaders ----------
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o}
+function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);return p}
+const P=prog(`attribute vec3 a;attribute vec3 n;attribute vec4 c;uniform mat4 m;uniform vec4 uc;uniform float useU;varying vec3 vn;varying vec4 vc;varying float vz;void main(){gl_Position=m*vec4(a,1.);vn=n;vc=mix(c,uc,useU);vz=a.z;}`,
+`precision mediump float;varying vec3 vn;varying vec4 vc;varying float vz;uniform float clipz;void main(){if(vz>clipz)discard;vec3 L=normalize(vec3(.4,-.6,.8));float d=.5+.5*max(dot(normalize(vn),L),0.)+.1*abs(vn.x);gl_FragColor=vec4(vc.rgb*d,vc.a);}`);
+const PI=prog(`attribute vec3 a;attribute vec3 c;uniform mat4 m;varying vec3 vc;varying float vz;void main(){gl_Position=m*vec4(a,1.);vc=c;vz=a.z;}`,`precision mediump float;varying vec3 vc;varying float vz;uniform float clipz;void main(){if(vz>clipz)discard;gl_FragColor=vec4(vc,1.);}`);
+const PE=prog(`attribute vec3 a;uniform mat4 m;varying float vz;void main(){gl_Position=m*vec4(a,1.);gl_Position.z-=.0003*gl_Position.w;vz=a.z;}`,`precision mediump float;uniform vec4 uc;varying float vz;uniform float clipz;void main(){if(vz>clipz)discard;gl_FragColor=uc;}`);
+const u=(p,n)=>gl.getUniformLocation(p,n);
+function attr(p,name,b,size){const l=gl.getAttribLocation(p,name);if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0)}
+function offA(p,name){const l=gl.getAttribLocation(p,name);if(l>=0)gl.disableVertexAttribArray(l)}
+// ---------- colors ----------
+function moved(i){const o=off[i],s=scl[i];return o[0]||o[1]||o[2]||s[0]!==1||s[1]!==1||s[2]!==1||names[i]}
+function recolor(){for(let i=0;i<PN.length;i++){const p=PN[i];let c=hex(SHEET[p.s][1]);
+  if(p.how==='guess')c=[.95,.55,.85];if(p.how==='orphan')c=[1,.25,.25];if(p.how==='none')c=c.map(v=>v*.6);
+  if(mode==='edit'&&lock[p.s])c=c.map(v=>v*.55+.08);
+  if(match)c=match.has(i)?[1,.85,.1]:c.map(v=>v*.35+.12);
+  if(SEL.has(i))c=i===sel?[1,.32,.32]:[1,.5,.35];
+  const [st,n]=pR[i];for(let v=st;v<st+n;v++){colArr.set([c[0],c[1],c[2],1],v*4)}}
+ gl.bindBuffer(gl.ARRAY_BUFFER,B.col);gl.bufferData(gl.ARRAY_BUFFER,colArr,gl.DYNAMIC_DRAW);req()}
+// ---------- camera ----------
+const C0=()=>({yaw:-1.05,pitch:.8,dist:Math.max(D.w,D.h)*1.45,tgt:[D.w/2,D.h/2,1400]});
+let cam=C0();
+function mats(W,H){const f=1/Math.tan(.42),near=40,far=4e5,{yaw,pitch,dist,tgt}=cam;
+ const ex=tgt[0]+dist*Math.cos(pitch)*Math.cos(yaw),ey=tgt[1]+dist*Math.cos(pitch)*Math.sin(yaw),ez=tgt[2]+dist*Math.sin(pitch);
+ let zx=ex-tgt[0],zy=ey-tgt[1],zz=ez-tgt[2];let l=Math.hypot(zx,zy,zz);zx/=l;zy/=l;zz/=l;
+ let xx=-zy,xy=zx,xz=0;l=Math.hypot(xx,xy)||1;xx/=l;xy/=l;
+ const yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;
+ const V=[xx,yx,zx,0,xy,yy,zy,0,xz,yz,zz,0,-(xx*ex+xy*ey+xz*ez),-(yx*ex+yy*ey+yz*ez),-(zx*ex+zy*ey+zz*ez),1];
+ const a=W/H,Pm=[f/a,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,2*far*near/(near-far),0];
+ const M=new Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=Pm[k*4+j]*V[i*4+k];M[i*4+j]=s}
+ return {M,right:[xx,xy,xz],up:[yx,yy,yz]}}
+function proj(M,x,y,z,W,H){const o=[0,0,0,0],v=[x,y,z,1];for(let j=0;j<4;j++)for(let k=0;k<4;k++)o[j]+=M[k*4+j]*v[k];if(o[3]<=0)return null;return [(o[0]/o[3]*.5+.5)*W,(-o[1]/o[3]*.5+.5)*H,o[3]]}
+// smooth focus
+let anim=null;function focusTo(t){anim={from:cam.tgt.slice(),to:t,t0:performance.now()};req()}
+// ---------- pick fb ----------
+let fb=null,fbt,fbr,fw=0,fh=0,pickPix=null;
+function ensureFB(W,H){if(fb&&fw===W&&fh===H)return;fw=W;fh=H;if(!fb){fb=gl.createFramebuffer();fbt=gl.createTexture();fbr=gl.createRenderbuffer()}
+ gl.bindTexture(gl.TEXTURE_2D,fbt);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+ gl.bindRenderbuffer(gl.RENDERBUFFER,fbr);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,W,H);
+ gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,fbt,0);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,fbr);gl.bindFramebuffer(gl.FRAMEBUFFER,null)}
+function drawRuns(R,mode_,vis){let run=null;const fl=()=>{if(run){gl.drawArrays(mode_,run[0],run[1]);run=null}};
+ for(let i=0;i<PN.length;i++){if(!vis(i)){fl();continue}const [st,n]=R[i];if(run&&run[0]+run[1]===st)run[1]+=n;else{fl();run=[st,n]}}fl()}
+const visP=i=>show[PN[i].s];
+function draw(){
+ if(anim){const k=Math.min(1,(performance.now()-anim.t0)/350),e=k*(2-k);cam.tgt=anim.from.map((v,j)=>v+(anim.to[j]-v)*e);if(k>=1)anim=null;else req()}
+ const dpr=Math.min(devicePixelRatio||1,2),W=cv.clientWidth*dpr|0,H=cv.clientHeight*dpr|0;
+ if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;lc.width=W;lc.height=H}
+ const {M}=mats(W,H);gl.enable(gl.DEPTH_TEST);
+ const pw=W>>1,ph=H>>1;ensureFB(pw,ph);gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.viewport(0,0,pw,ph);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ gl.useProgram(PI);gl.uniformMatrix4fv(u(PI,'m'),false,M);gl.uniform1f(u(PI,'clipz'),clipz);attr(PI,'a',B.pos,3);attr(PI,'c',B.idc,3);drawRuns(pR,gl.TRIANGLES,visP);offA(PI,'c');
+ pickPix=new Uint8Array(pw*ph*4);gl.readPixels(0,0,pw,ph,gl.RGBA,gl.UNSIGNED_BYTE,pickPix);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+ gl.viewport(0,0,W,H);gl.clearColor(.118,.133,.157,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ gl.useProgram(P);gl.uniformMatrix4fv(u(P,'m'),false,M);gl.uniform1f(u(P,'clipz'),clipz);
+ if(cam.pitch>0){gl.uniform1f(u(P,'useU'),1);gl.uniform4f(u(P,'uc'),.33,.35,.38,1);attr(P,'a',B.fpos,3);attr(P,'n',B.fnor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,fpos.length/3)}
+ gl.uniform1f(u(P,'useU'),0);attr(P,'a',B.pos,3);attr(P,'n',B.nor,3);attr(P,'c',B.col,4);drawRuns(pR,gl.TRIANGLES,visP);offA(P,'c');
+ gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform1f(u(PE,'clipz'),clipz);gl.uniform4f(u(PE,'uc'),.05,.06,.07,.7);attr(PE,'a',B.pe,3);drawRuns(eR,gl.LINES,visP);
+ if(SEL.size){gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.95,.4,1);for(const i of SEL)if(show[PN[i].s])gl.drawArrays(gl.LINES,eR[i][0],eR[i][1]);gl.enable(gl.DEPTH_TEST)}
+ if(show.struct){gl.useProgram(P);gl.uniform1f(u(P,'useU'),1);const c=hex(STRUCT_COL);gl.uniform4f(u(P,'uc'),c[0],c[1],c[2],.35);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);attr(P,'a',B.spos,3);attr(P,'n',B.snor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,spos.length/3);gl.depthMask(true);gl.disable(gl.BLEND)}
+ offA(P,'n');
+ // labels
+ lx.clearRect(0,0,W,H);
+ if(show.labels){const fs=Math.round(11*dpr);lx.font=`600 ${fs}px system-ui,"Microsoft JhengHei",sans-serif`;lx.textAlign='center';lx.textBaseline='middle';
+  const boxes=[],cand=[];
+  for(const p of PN){const i=p.id;if(!show[p.s])continue;if(!dcode(i)&&!p.size)continue;const c=ctr(i);if(c[2]>clipz)continue;
+   const s=proj(M,c[0],c[1],c[2],W,H);if(!s||s[0]<0||s[1]<0||s[0]>=W||s[1]>=H)continue;
+   const px=(s[0]/2)|0,py=ph-1-((s[1]/2)|0),k=(py*pw+px)*4,id=pickPix[k]|(pickPix[k+1]<<8)|(pickPix[k+2]<<16);
+   const hl=(match&&match.has(i))||SEL.has(i);
+   if(id-1!==i&&!hl)continue;
+   const big=Math.max(p.b1[0]-p.b0[0],p.b1[1]-p.b0[1],p.b1[2]-p.b0[2])/2;const scr=big*2/s[2]*(H/(2*Math.tan(.42)));
+   if(scr<fs*2.2&&!hl)continue;cand.push([(hl?1e6:0)+scr,p,s,hl])}
+  cand.sort((a,b)=>b[0]-a[0]);
+  for(const [pri,p,s,hl] of cand.slice(0,400)){const dc=dcode(p.id),l1=dc||p.size,l2=dc?p.size:'';
+   const w=Math.max(lx.measureText(l1).width,l2?lx.measureText(l2).width:0)+8,h=(l2?2:1)*fs*1.2+4,x0=s[0]-w/2,y0=s[1]-h/2;
+   if(!hl&&boxes.some(b=>x0<b[2]&&x0+w>b[0]&&y0<b[3]&&y0+h>b[1]))continue;boxes.push([x0,y0,x0+w,y0+h]);
+   lx.fillStyle=hl?'rgba(60,40,0,.9)':'rgba(0,0,0,.6)';lx.fillRect(x0,y0,w,h);
+   lx.fillStyle=hl?'#ffd84d':'#fff';if(l2){lx.fillText(l1,s[0],s[1]-fs*.6);lx.fillStyle=hl?'#ffe9a0':'#cfd6df';lx.fillText(l2,s[0],s[1]+fs*.6)}else lx.fillText(l1,s[0],s[1])}}
+ gz=null;
+ if(mode==='edit'&&sel>=0&&!lock[PN[sel].s]&&show[PN[sel].s]){const c=ctr(sel),o=proj(M,c[0],c[1],c[2],W,H);if(o){const cols=['#ff5b5b','#4dff7a','#5ba8ff'],nm=['X 左右','Y 前後','Z 上下'];
+  const LEN=95*dpr;gz={o:[o[0]/dpr,o[1]/dpr],tips:[]};
+  for(let k=0;k<3;k++){const e=[0,0,0];e[k]=200;const q=proj(M,c[0]+e[0],c[1]+e[1],c[2]+e[2],W,H);if(!q){gz.tips.push(null);continue}
+   let dx=q[0]-o[0],dy=q[1]-o[1];const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const tip=[o[0]+dx*LEN,o[1]+dy*LEN];gz.tips.push([tip[0]/dpr,tip[1]/dpr]);
+   const act=k===axis||k===gzHover;lx.globalAlpha=act?1:.75;lx.strokeStyle='rgba(0,0,0,.6)';lx.lineWidth=9*dpr;lx.beginPath();lx.moveTo(o[0],o[1]);lx.lineTo(tip[0],tip[1]);lx.stroke();
+   lx.strokeStyle=cols[k];lx.lineWidth=(act?6:4)*dpr;lx.beginPath();lx.moveTo(o[0],o[1]);lx.lineTo(tip[0],tip[1]);lx.stroke();
+   // arrow head
+   const hs=14*dpr;lx.fillStyle=cols[k];lx.beginPath();lx.moveTo(tip[0]+dx*hs,tip[1]+dy*hs);lx.lineTo(tip[0]-dy*hs*.55,tip[1]+dx*hs*.55);lx.lineTo(tip[0]+dy*hs*.55,tip[1]-dx*hs*.55);lx.closePath();lx.fill();lx.strokeStyle='rgba(0,0,0,.6)';lx.lineWidth=1.5*dpr;lx.stroke();
+   lx.font=`700 ${Math.round(13*dpr)}px system-ui,"Microsoft JhengHei",sans-serif`;lx.lineWidth=4*dpr;lx.strokeText(nm[k],tip[0]+dx*hs*2.2,tip[1]+dy*hs*2.2);lx.fillText(nm[k],tip[0]+dx*hs*2.2,tip[1]+dy*hs*2.2)}
+  lx.globalAlpha=1;lx.fillStyle='#fff';lx.beginPath();lx.arc(o[0],o[1],5*dpr,0,7);lx.fill()}}
+}
+let raf=0;function req(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;draw()})}
+addEventListener('resize',req);
+// ---------- undo / state ----------
+const undo=[];
+function pushUndo(ids){ids=[].concat(ids);undo.push(ids.map(i=>[i,off[i].slice(),scl[i].slice(),names[i]]));if(undo.length>500)undo.shift()}
+function doUndo(){const u_=undo.pop();if(!u_){toast('沒有可以復原的');return}for(const [i,o,s,n] of u_){off[i]=o;scl[i]=s;names[i]=n;applyOff(i)}showInfo();recolor();autosave()}
+function setOff(i,o){off[i]=o.map(v=>Math.round(v));applyOff(i);showInfo(true);req();autosave()}
+const movable=()=>[...SEL].filter(i=>!lock[PN[i].s]);
+function moveGroup(d){const ids=movable();if(!ids.length)return;pushUndo(ids);for(const i of ids){off[i]=off[i].map((v,k)=>Math.round(v+d[k]));applyOff(i)}showInfo(true);req();autosave()}
+// ---------- snapping ----------
+function snapDelta(i,a,raw){ // raw: desired offset along axis a
+ const step=+document.getElementById('step').value;
+ if(!snapOn)return Math.round(raw/5)*5;
+ const o=off[i].slice();o[a]=raw;const [mn,mx]=boxAt(i,o);
+ let best=null;const thr=40,R=400;
+ for(let j=0;j<PN.length;j++){if(j===i||SEL.has(j)||!show[PN[j].s])continue;const jm=bmin(j),jM=bmax(j);
+  let near=true;for(let k=0;k<3;k++){if(k===a)continue;if(jm[k]>mx[k]+R||jM[k]<mn[k]-R){near=false;break}}if(!near)continue;
+  for(const c of [jm[a],jM[a]])for(const e of [mn[a],mx[a]]){const d=c-e;if(Math.abs(d)<thr&&(best===null||Math.abs(d)<Math.abs(best)))best=d}}
+ return best!==null?raw+best:Math.round(raw/5)*5}
+// ---------- input ----------
+const pts=new Map();let last=null,btn=0,moved_=0,downAt=null,drag=null;
+function pan(dx,dy){const {right,up}=mats(cv.width,cv.height);const s=cam.dist*.0014;for(let i=0;i<3;i++)cam.tgt[i]+=(-right[i]*dx+up[i]*dy)*s;anim=null;req()}
+function pickAt(x,y){if(!pickPix)return -1;const dpr=Math.min(devicePixelRatio||1,2),pw=cv.width>>1,ph=cv.height>>1;const px=Math.min(pw-1,Math.max(0,(x*dpr/2)|0)),py=ph-1-Math.min(ph-1,Math.max(0,(y*dpr/2)|0));const k=(py*pw+px)*4;return (pickPix[k]|(pickPix[k+1]<<8)|(pickPix[k+2]<<16))-1}
+function axisScreen(i){const dpr=Math.min(devicePixelRatio||1,2),{M}=mats(cv.width,cv.height),c=ctr(i);const e=[0,0,0];e[axis]=1000;
+ const a=proj(M,c[0],c[1],c[2],cv.width,cv.height),b=proj(M,c[0]+e[0],c[1]+e[1],c[2]+e[2],cv.width,cv.height);if(!a||!b)return null;return [(b[0]-a[0])/dpr,(b[1]-a[1])/dpr]}
+function gzAt(x,y){if(!gz)return -1;let best=-1,bd=16;for(let k=0;k<3;k++){const tp=gz.tips[k];if(!tp)continue;const ax=tp[0]-gz.o[0],ay=tp[1]-gz.o[1],L2=ax*ax+ay*ay||1;
+  let s=((x-gz.o[0])*ax+(y-gz.o[1])*ay)/L2;if(s<.15||s>1.35)continue;s=Math.min(s,1);const d=Math.hypot(x-gz.o[0]-ax*s,y-gz.o[1]-ay*s);if(d<bd){bd=d;best=k}}return best}
+function setAxis(k){axis=k;document.querySelectorAll('.ax').forEach(x=>x.classList.toggle('on',+x.dataset.a===k));req()}
+cv.addEventListener('pointermove',e=>{if(pts.size)return;const h=mode==='edit'?gzAt(e.clientX,e.clientY):-1;if(h!==gzHover){gzHover=h;cv.style.cursor=h>=0?'grab':'';req()}});
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);btn=e.button;last=null;moved_=0;downAt=[e.clientX,e.clientY];drag=null;
+ const gk=(mode==='edit'&&pts.size===1&&btn===0)?gzAt(e.clientX,e.clientY):-1;
+ if(gk>=0){setAxis(gk);const v=axisScreen(sel);if(v&&Math.hypot(v[0],v[1])>.5){const ids=movable();drag={i:sel,ids,v,starts:ids.map(j=>off[j].slice()),x:e.clientX,y:e.clientY,gz:1};pushUndo(ids);return}}
+ const hit=pickAt(e.clientX,e.clientY);
+ if(mode==='edit'&&pts.size===1&&btn===0&&!e.shiftKey&&SEL.has(hit)&&!lock[PN[hit].s]){const v=axisScreen(hit);if(v&&Math.hypot(v[0],v[1])>2){const ids=movable();drag={i:hit,ids,v,starts:ids.map(j=>off[j].slice()),x:e.clientX,y:e.clientY};pushUndo(ids)}}});
+cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const prev=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
+ if(downAt)moved_=Math.max(moved_,Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]));
+ if(drag&&pts.size===1){const dx=e.clientX-drag.x,dy=e.clientY-drag.y,v=drag.v,L2=v[0]*v[0]+v[1]*v[1];const mm=(dx*v[0]+dy*v[1])/L2*1000;
+  const k=drag.ids.indexOf(drag.i),s0=drag.starts[k][axis],d=Math.round(snapDelta(drag.i,axis,s0+mm)-s0);
+  drag.ids.forEach((j,n)=>{const o=drag.starts[n].slice();o[axis]+=d;off[j]=o;applyOff(j)});showInfo(true);req();return}
+ if(pts.size===1){const dx=e.clientX-prev[0],dy=e.clientY-prev[1];if(btn===2||e.shiftKey)pan(dx,dy);else{cam.yaw-=dx*.008;cam.pitch=Math.max(-1.4,Math.min(1.55,cam.pitch+dy*.008));req()}}
+ else if(pts.size===2){drag=null;moved_=99;const [a,b]=[...pts.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]),cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2;
+  if(last){cam.dist=Math.max(500,Math.min(80000,cam.dist*last.d/d));pan(cx-last.cx,cy-last.cy)}last={d,cx,cy};req()}});
+const upH=e=>{const tap=pts.size===1&&moved_<6;pts.delete(e.pointerId);last=null;
+ if(drag){const wasGz=drag.gz;if(moved_<3)undo.pop();else autosave();drag=null;if(moved_>=3||wasGz){showInfo();return}}
+ if(tap&&e.type==='pointerup')select(pickAt(e.clientX,e.clientY),true,e.shiftKey||multi)};
+cv.addEventListener('pointerup',upH);cv.addEventListener('pointercancel',upH);cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{e.preventDefault();cam.dist=Math.max(500,Math.min(80000,cam.dist*Math.exp(e.deltaY*.001)));req()},{passive:false});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();doUndo();return}
+ if(mode!=='edit'||!movable().length)return;const st=+document.getElementById('step').value;const map={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowDown:[1,-1],ArrowUp:[1,1],PageUp:[2,1],PageDown:[2,-1]};
+ const m=map[e.key];if(m){e.preventDefault();const d=[0,0,0];d[m[0]]=m[1]*st;moveGroup(d)}});
+// ---------- selection / info ----------
+const info=document.getElementById('info'),infoT=document.getElementById('infoT'),ed=document.getElementById('ed');
+function select(i,focus,add){if(i>=0&&mode==='edit'&&lock[PN[i].s]){toast(SN[PN[i].s]+'已上鎖');return}
+ if(add&&mode==='edit'){if(i<0)return;if(SEL.has(i)){SEL.delete(i);sel=SEL.size?[...SEL][SEL.size-1]:-1}else{SEL.add(i);sel=i}}
+ else{SEL.clear();if(i>=0)SEL.add(i);sel=i}
+ if(sel>=0&&focus)focusTo(ctr(sel));showInfo();recolor()}
+function showInfo(light){if(sel<0){info.style.display='none';return}const p=PN[sel],o=off[sel],mn=bmin(sel),mx=bmax(sel);
+ const unk=UNK.has(p.how)&&SEL.size===1,dm=dims(sel);
+ infoT.innerHTML=`${SEL.size>1?`<div style="color:#ffb86b;font-size:14px">已選 ${SEL.size} 塊（一起移動）・下面顯示最後點的那塊</div>`:''}<div class="c">${dcode(sel)||'（圖上無編號）'}</div><div>${p.size||'（無尺寸標註）'}</div><div style="color:#9aa;font-size:13px;margin-top:4px">${SN[p.s]}・高度 ${Math.round(mn[2])}～${Math.round(mx[2])} mm${moved(sel)?`　<span style="color:#ffb86b">已移動 X${o[0]} Y${o[1]} Z${o[2]}</span>`:''}</div>${HOW[p.how]?`<div style="color:#f6a;font-size:13px;margin-top:2px">${HOW[p.how]}</div>`:''}`;
+ ed.style.display=mode==='edit'&&!lock[p.s]?'flex':'none';
+ document.getElementById('unk').style.display=mode==='edit'&&unk?'flex':'none';
+ if(unk){for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=dm[k]}const ne=document.getElementById('nm');if(document.activeElement!==ne)ne.value=names[sel]||''}
+ for(const [k,id] of [[0,'ox'],[1,'oy'],[2,'oz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=o[k]}
+ info.style.display='block'}
+document.querySelectorAll('.ax').forEach(b=>b.onclick=()=>{axis=+b.dataset.a;document.querySelectorAll('.ax').forEach(x=>x.classList.toggle('on',x===b))});
+document.getElementById('plus').onclick=()=>nudge(1);document.getElementById('minus').onclick=()=>nudge(-1);
+function nudge(sg){const st=+document.getElementById('step').value;const d=[0,0,0];d[axis]=sg*st;moveGroup(d)}
+for(const [k,id] of [[0,'ox'],[1,'oy'],[2,'oz']])document.getElementById(id).addEventListener('change',e=>{if(sel<0)return;const d=[0,0,0];d[k]=(+e.target.value||0)-off[sel][k];moveGroup(d)});
+for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']])document.getElementById(id).addEventListener('change',e=>{if(sel<0)return;const v=Math.max(5,+e.target.value||0),p=PN[sel],base=p.b1[k]-p.b0[k]||1;pushUndo(sel);scl[sel][k]=v/base;applyOff(sel);showInfo();req();autosave()});
+document.getElementById('nm').addEventListener('change',e=>{if(sel<0)return;pushUndo(sel);names[sel]=e.target.value.trim()||null;showInfo();req();autosave()});
+document.getElementById('resetOne').onclick=()=>{const ids=movable();if(!ids.length)return;pushUndo(ids);for(const i of ids){off[i]=[0,0,0];scl[i]=[1,1,1];names[i]=null;applyOff(i)}showInfo();req();autosave()};
+document.getElementById('desel').onclick=()=>select(-1);
+function refreshSelColors(){recolor()}
+info.addEventListener('pointerdown',e=>e.stopPropagation());
+// ---------- search ----------
+const q=document.getElementById('q'),res=document.getElementById('res'),cnt=document.getElementById('cnt');
+const norm=s=>s.toUpperCase().replace(/[－—]/g,'-').replace(/\s+/g,' ').trim();
+function doSearch(){const s=norm(q.value);if(!s){match=null;res.style.display='none';cnt.textContent='';recolor();return}
+ const terms=s.split(' '),m=new Set(),list=[];
+ for(const p of PN){const k=p.key;let ok;if(/^[A-Z]{1,3}\d?-/.test(s)&&!s.includes(' ')){const c=p.code.toUpperCase().replace('？','');ok=c===s||c.startsWith(s+'-')||c.startsWith(s+'T')}else ok=k.includes(s)||terms.every(t=>k.includes(t));if(ok){m.add(p.id);list.push(p)}}
+ if(!list.length&&/^[A-Z]{1,3}\d?-/.test(s))for(const p of PN)if(p.code.toUpperCase().startsWith(s)){m.add(p.id);list.push(p)}
+ match=m;cnt.textContent=`找到 ${m.size} 塊`;
+ res.innerHTML=list.slice(0,80).map(p=>`<div data-i="${p.id}"><b>${p.code||'—'}</b>${p.how==='guess'?' <span style="color:#f6a">推測</span>':p.how==='orphan'?' <span style="color:#f66">沒畫板</span>':''}　${p.size}　<span style="color:#9aa">${SN[p.s]}</span></div>`).join('')+(list.length>80?`<div style="color:#9aa">…還有 ${list.length-80} 塊</div>`:'');
+ res.style.display=list.length?'block':'none';recolor()}
+q.addEventListener('input',doSearch);
+document.getElementById('clr').onclick=()=>{q.value='';doSearch()};
+res.addEventListener('click',e=>{const d=e.target.closest('[data-i]');if(!d)return;const p=PN[+d.dataset.i];
+ if(!show[p.s]){show[p.s]=1;refreshBar()}cam.dist=Math.max(2500,Math.min(cam.dist,6000));res.style.display='none';select(p.id,true)});
+q.addEventListener('focus',()=>{if(match&&res.innerHTML)res.style.display='block'});
+// ---------- bars ----------
+const bar=document.getElementById('bar'),ebar=document.getElementById('ebar');
+function refreshBar(){bar.innerHTML='';
+ for(const k of ['wall','k','beam','deck']){const g=document.createElement('div');g.className='lay';
+  const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=`<span class="sw" style="background:${SHEET[k][1]}"></span>${SHEET[k][0]}`;
+  b.onclick=()=>{show[k]=!show[k];if(!show[k]&&sel>=0&&PN[sel].s===k)select(-1);refreshBar();req()};g.appendChild(b);
+  if(mode==='edit'){const l=document.createElement('div');l.className='t lk'+(lock[k]?' warn':'');l.textContent=lock[k]?'🔒':'🔓';l.title='上鎖';
+   l.onclick=()=>{lock[k]=!lock[k];if(lock[k]&&sel>=0&&PN[sel].s===k)select(-1);toast(SHEET[k][0]+(lock[k]?' 已上鎖，不能選、不能動':' 已解鎖'));refreshBar();recolor();autosave()};g.appendChild(l)}
+  bar.appendChild(g)}
+ for(const [k,t] of [['struct',`<span class="sw" style="background:${STRUCT_COL}"></span>混凝土`],['labels','🏷️ 編號']]){const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=t;b.onclick=()=>{show[k]=!show[k];refreshBar();req()};bar.appendChild(b)}
+ const cw=document.createElement('div');cw.className='t';cw.innerHTML='切掉上方 <input id="clip" type="range" min="200" max="3500" step="50" value="'+(clipz>=1e9?3500:clipz)+'" style="width:110px"><span id="clipv">'+(clipz>=1e9?'全顯示':clipz)+'</span>';
+ cw.addEventListener('pointerdown',e=>e.stopPropagation());const cl=cw.querySelector('input');cl.oninput=()=>{const v=+cl.value;clipz=v>=3500?1e9:v;cw.querySelector('#clipv').textContent=v>=3500?'全顯示':v;req()};bar.appendChild(cw);
+ for(const [t,f] of [['↺ 視角',()=>{cam=C0();req()}],['⬇ 俯視',()=>{cam.pitch=1.55;cam.yaw=-Math.PI/2;req()}],['⬆ 仰看',()=>{cam.pitch=-1.2;req()}]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;bar.appendChild(b)}
+ ebar.style.display=mode==='edit'?'flex':'none';ebar.innerHTML='';
+ if(mode==='edit'){const sn=document.createElement('div');sn.className='t'+(snapOn?' on':'');sn.textContent='🧲 吸附'+(snapOn?'開':'關');sn.onclick=()=>{snapOn=!snapOn;refreshBar()};ebar.appendChild(sn);
+  const mu=document.createElement('div');mu.className='t'+(multi?' on':'');mu.textContent='☑ 多選'+(multi?'開':'關');mu.onclick=()=>{multi=!multi;refreshBar()};ebar.appendChild(mu);
+  for(const [t,f] of [['↶ 復原',doUndo],['💾 存檔／讀檔',openSaves]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;ebar.appendChild(b)}
+  const n=document.createElement('span');n.style.cssText='font-size:13px;color:#ffb86b';n.textContent=`已調整 ${PN.filter(p=>moved(p.id)).length} 塊`;ebar.appendChild(n)}}
+function setMode(m){mode=m;document.getElementById('mView').classList.toggle('on',m==='view');document.getElementById('mEdit').classList.toggle('on',m==='edit');refreshBar();showInfo();recolor()}
+document.getElementById('mView').onclick=()=>setMode('view');document.getElementById('mEdit').onclick=()=>setMode('edit');
+// ---------- saves ----------
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+function snapshot(){const moves={},dimsO={},nm={};off.forEach((o,i)=>{if(o[0]||o[1]||o[2])moves[i]=o;const s=scl[i];if(s[0]!==1||s[1]!==1||s[2]!==1)dimsO[i]=dims(i);if(names[i])nm[i]=names[i]});return {room:ROOM,moves,dims:dimsO,names:nm,lock:{...lock},time:new Date().toLocaleString('zh-TW')}}
+function restore(s){for(let i=0;i<PN.length;i++){const o=(s.moves&&s.moves[i])||[0,0,0],p=PN[i],dm=s.dims&&s.dims[i];
+  const sc=dm?[0,1,2].map(k=>dm[k]/((p.b1[k]-p.b0[k])||1)):[1,1,1];names[i]=(s.names&&s.names[i])||null;
+  if(off[i].some((v,k)=>v!==o[k])||scl[i].some((v,k)=>v!==sc[k])){off[i]=o.slice();scl[i]=sc;applyOff(i)}}
+ if(s.lock)Object.assign(lock,s.lock);undo.length=0;showInfo();refreshBar();recolor()}
+let asT=0;function autosave(){clearTimeout(asT);asT=setTimeout(()=>{lsSet(LSKEY+'_current',snapshot());refreshBar()},300)}
+function saves(){return lsGet(LSKEY+'_saves')||[]}
+const modal=document.getElementById('modal'),mbox=document.getElementById('mbox');
+function openSaves(){const S=saves();
+ mbox.innerHTML=`<h3>💾 存檔／讀檔（${ROOM} 房）</h3>
+ <div class="row"><input type="text" id="sname" placeholder="存檔名稱，例如：牆板調完" value=""><div class="t on" id="snew">存成新檔</div></div>
+ <div style="margin:10px 0 4px;color:#9aa;font-size:13px">已存的檔（存在這台電腦的瀏覽器裡）</div>
+ <div id="slist">${S.length?S.map((s,i)=>`<div class="sv"><div class="n">${s.name}<br><small>${s.time}・調整 ${new Set([...Object.keys(s.moves||{}),...Object.keys(s.dims||{}),...Object.keys(s.names||{})]).size} 塊</small></div><div class="t" data-l="${i}">讀取</div><div class="t" data-o="${i}">覆蓋</div><div class="t" data-x="${i}">匯出</div><div class="t warn" data-d="${i}">刪除</div></div>`).join(''):'<div style="color:#9aa;padding:8px 0">還沒有存檔</div>'}</div>
+ <div class="row" style="margin-top:12px"><div class="t" id="sexp">⬇ 匯出目前狀態成檔案</div><div class="t" id="simp">⬆ 匯入檔案</div><div class="t warn" id="sall">全部歸位</div><div class="t" id="sclose">關閉</div></div>
+ <div style="margin-top:8px;color:#9aa;font-size:12px">調完後用「匯出」存成檔案，把檔案傳給 Claude 就可以讀出規則。</div>`;
+ modal.style.display='flex';
+ mbox.querySelector('#snew').onclick=()=>{const n=mbox.querySelector('#sname').value.trim()||('存檔 '+(S.length+1));const s=snapshot();s.name=n;S.unshift(s);if(lsSet(LSKEY+'_saves',S))toast('已存：'+n);else toast('這裡不能存，請用「匯出」');openSaves()};
+ mbox.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{restore(S[+b.dataset.l]);autosave();toast('已讀取：'+S[+b.dataset.l].name);modal.style.display='none'});
+ mbox.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const i=+b.dataset.o;if(!confirmBox(`覆蓋「${S[i].name}」？`))return;const s=snapshot();s.name=S[i].name;S[i]=s;lsSet(LSKEY+'_saves',S);toast('已覆蓋');openSaves()});
+ mbox.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const i=+b.dataset.d;if(!confirmBox(`刪除「${S[i].name}」？`))return;S.splice(i,1);lsSet(LSKEY+'_saves',S);openSaves()});
+ mbox.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>exportFile(S[+b.dataset.x]));
+ mbox.querySelector('#sexp').onclick=()=>{const s=snapshot();s.name=mbox.querySelector('#sname').value.trim()||'目前狀態';exportFile(s)};
+ mbox.querySelector('#simp').onclick=()=>document.getElementById('file').click();
+ mbox.querySelector('#sall').onclick=()=>{if(!confirmBox('全部板子回到原位？'))return;restore({moves:{},dims:{},names:{},lock:{wall:0,k:0,beam:0,deck:0}});autosave();modal.style.display='none'};
+ mbox.querySelector('#sclose').onclick=()=>modal.style.display='none'}
+let confirmArm=null;function confirmBox(msg){if(confirmArm===msg){confirmArm=null;return true}confirmArm=msg;toast(msg+'（再按一次確認）');setTimeout(()=>{if(confirmArm===msg)confirmArm=null},3000);return false}
+modal.addEventListener('pointerdown',e=>{if(e.target===modal)modal.style.display='none'});
+function exportFile(s){const ids=new Set([...Object.keys(s.moves||{}),...Object.keys(s.dims||{}),...Object.keys(s.names||{})]);
+ const full={...s,format:'formwork3d-v2',panels:[...ids].map(i=>{i=+i;const p=PN[i],o=(s.moves&&s.moves[i])||[0,0,0],dm=(s.dims&&s.dims[i])||[p.b1[0]-p.b0[0],p.b1[1]-p.b0[1],p.b1[2]-p.b0[2]];return {i,code:p.code,name:(s.names&&s.names[i])||'',size:p.size,how:p.how,sheet:SN[p.s],move:o,dims:dm,box:[p.b0.map((v,k)=>Math.round(v+o[k])),p.b0.map((v,k)=>Math.round(v+o[k]+dm[k]))]}})};
+ const blob=new Blob([JSON.stringify(full,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${ROOM}房_調整_${(s.name||'存檔').replace(/[\\/:*?"<>|]/g,'_')}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('已匯出檔案')}
+document.getElementById('file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const s=JSON.parse(await f.text());if(s.room&&s.room!==ROOM){toast('這是 '+s.room+' 房的檔案');return}
+ const S=saves();s.name=s.name||f.name;S.unshift({room:ROOM,moves:s.moves||{},dims:s.dims||{},names:s.names||{},lock:s.lock||{},time:s.time||'',name:s.name});lsSet(LSKEY+'_saves',S);restore(s);autosave();toast('已匯入：'+s.name);modal.style.display='none'}catch(err){toast('檔案讀不出來')}e.target.value=''});
+// ---------- start ----------
+const cur=lsGet(LSKEY+'_current');if(cur&&(Object.keys(cur.moves||{}).length||Object.keys(cur.dims||{}).length||Object.keys(cur.names||{}).length)){restore(cur);toast('已接續上次的調整')}
+refreshBar();recolor();
+}
+</script></body></html>

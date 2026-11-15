@@ -303,7 +303,7 @@ function select(i,focus,add){if(i>=0&&mode==='edit'&&lock[PN[i].s]){toast(SN[PN[
  if(sel>=0&&focus)focusTo(ctr(sel));showInfo();recolor()}
 function showInfo(light){if(sel<0){info.style.display='none';return}const p=PN[sel],o=off[sel],mn=bmin(sel),mx=bmax(sel);
  const unk=UNK.has(p.how)&&SEL.size===1,dm=dims(sel);
- infoT.innerHTML=`${SEL.size>1?`<div style="color:#ffb86b;font-size:12px">已選 ${SEL.size} 塊，一起移動</div>`:''}<div><span class="c">${dcode(sel)||'（無編號）'}</span>　${p.size||''}</div><div style="color:#9aa;font-size:12px">${SN[p.s]}・${Math.round(mn[2])}～${Math.round(mx[2])}${moved(sel)?`　<span style="color:#ffb86b">移 ${o[0]},${o[1]},${o[2]}</span>`:''}${HOW[p.how]?`　<span style="color:#f6a">${HOW[p.how]}</span>`:''}</div>`;
+ infoT.innerHTML=`${SEL.size>1?`<div style="color:#ffb86b;font-size:12px">已選 ${SEL.size} 塊，一起移動</div>`:''}<div><span class="c">${dcode(sel)||'（無編號）'}</span>　${p.size||''}</div><div style="color:#9aa;font-size:12px">${SN[p.s]}・<span style="color:#7bd0ff">底 ${Math.round(mn[2])}</span>　頂 ${Math.round(mx[2])}${moved(sel)?`　<span style="color:#ffb86b">移 ${o[0]},${o[1]},${o[2]}</span>`:''}${HOW[p.how]?`　<span style="color:#f6a">${HOW[p.how]}</span>`:''}</div>`;
  ed.style.display=mode==='edit'&&!lock[p.s]?'flex':'none';
  document.getElementById('unk').style.display=unk?'flex':'none';
  if(unk){for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=dm[k]}const ne=document.getElementById('nm');if(document.activeElement!==ne)ne.value=names[sel]||''}

@@ -23,9 +23,11 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 #res{max-height:30vh;overflow:auto;background:rgba(20,23,28,.96);border:1px solid #444c57;border-radius:8px;display:none;max-width:460px}
 #res div{padding:8px 10px;border-bottom:1px solid #333a44;font-size:14px;cursor:pointer}
 #res b{color:#ffd84d}
-#info{position:fixed;left:8px;bottom:8px;background:rgba(20,23,28,.96);border:1px solid #556;border-radius:10px;padding:10px 12px;font-size:15px;display:none;z-index:3;max-width:min(560px,calc(100% - 40px))}
-#info .c{font-size:20px;font-weight:700;color:#ffd84d}
-#ed{margin-top:8px;display:none;flex-direction:column;gap:6px}
+#info{position:fixed;left:6px;bottom:6px;background:rgba(20,23,28,.94);border:1px solid #556;border-radius:10px;padding:6px 9px;font-size:13px;display:none;z-index:3;max-width:min(430px,calc(100% - 24px))}
+.sm .t{padding:5px 8px;font-size:13px;min-height:18px}.sm2{font-size:13px}.sm2 .num{width:62px;font-size:15px;padding:3px}
+@media(max-width:600px){#help{font-size:10px;right:6px;bottom:6px;line-height:1.4;max-width:46%}#q{min-width:110px}.t{padding:6px 8px;font-size:13px}}
+#info .c{font-size:16px;font-weight:700;color:#ffd84d}
+#ed{margin-top:5px;display:none;flex-direction:column;gap:5px}
 #ed .row .t{padding:6px 9px}
 .ax{font-weight:700;min-width:22px;justify-content:center}
 .ax.x{color:#ff7b7b}.ax.y{color:#7bff9b}.ax.z{color:#7bb8ff}
@@ -48,6 +50,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 <canvas id="c"></canvas><canvas id="lab"></canvas>
 <div id="top">
  <div class="row">
+  <div class="t" id="fold" title="收合">☰</div>
   <select id="room" style="font-size:16px;padding:7px 8px;border-radius:8px;background:#2c323b;color:#fff;border:1px solid #6b93cf;max-width:170px"></select>
   <div class="t on" id="mView">👁 預覽</div><div class="t" id="mEdit">✏️ 編輯</div>
   <input id="q" placeholder="搜尋編號或尺寸，例如 U-W1-21、FWR 2440" autocomplete="off"><span id="cnt"></span><div class="t" id="clr">✕</div>
@@ -58,19 +61,16 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 </div>
 <div id="info"><div id="infoT"></div>
  <div id="ed">
-  <div class="row" style="font-size:13px;color:#9aa">按住紅綠藍箭頭拖曳＝沿那個方向移動・Shift＋點＝多選</div>
-  <div class="row">
-   <div class="t ax x" data-a="0">X 左右</div><div class="t ax y" data-a="1">Y 前後</div><div class="t ax z on" data-a="2">Z 上下</div>
-   <span style="font-size:13px;color:#9aa">每步</span>
-   <select id="step" class="num" style="width:80px"><option>5</option><option selected>10</option><option>50</option><option>100</option><option>500</option></select>
+  <div class="row sm">
+   <div class="t ax x" data-a="0">X</div><div class="t ax y" data-a="1">Y</div><div class="t ax z on" data-a="2">Z</div>
+   <select id="step" class="num" style="width:62px"><option>5</option><option selected>10</option><option>50</option><option>100</option><option>500</option></select>
    <div class="t" id="minus">－</div><div class="t" id="plus">＋</div>
+   <div class="t" id="toBox" title="丟進收納箱">📦</div><div class="t" id="resetOne" title="歸位">↺</div><div class="t" id="moreB" title="數值">⋯</div><div class="t" id="desel" title="取消選取">✕</div>
   </div>
-  <div class="row" style="font-size:14px">
-   位移 X<input class="num" id="ox" type="number" step="5"> Y<input class="num" id="oy" type="number" step="5"> Z<input class="num" id="oz" type="number" step="5">
+  <div id="more" style="display:none;flex-direction:column;gap:5px">
+   <div class="row sm2">位移 X<input class="num" id="ox" type="number" step="5"> Y<input class="num" id="oy" type="number" step="5"> Z<input class="num" id="oz" type="number" step="5"></div>
+   <div class="row sm2" id="unk" style="display:none">編號<input class="num" id="nm" type="text" style="width:100px" placeholder="自己填"> 長X<input class="num" id="dx" type="number" step="5"> 寬Y<input class="num" id="dy" type="number" step="5"> 高Z<input class="num" id="dz" type="number" step="5"></div>
   </div>
-  <div class="row" id="unk" style="display:none;font-size:14px;flex-wrap:wrap">未知料可改：編號<input class="num" id="nm" type="text" style="width:120px" placeholder="自己填">
-   長X<input class="num" id="dx" type="number" step="5"> 寬Y<input class="num" id="dy" type="number" step="5"> 高Z<input class="num" id="dz" type="number" step="5"></div>
-  <div class="row"><div class="t" id="resetOne">↺ 選取的歸位</div><div class="t" id="desel">✕ 取消選取</div></div>
  </div>
 </div>
 <div id="help"><span id="ttl"></span><br><span style="color:#f6a">■</span> 粉紅＝編號推測　<span style="color:#f66">■</span> 紅點＝只有標籤沒畫板<br>單指拖曳＝旋轉　雙指＝縮放／平移　點一下＝選取</div>
@@ -101,11 +101,11 @@ function start(D){
 const ROOM=D.room, LSKEY='formwork3d_'+ROOM;
 const SHEET={wall:['牆板','#8fb3d9'],k:['K板','#ff9a3c'],beam:['梁板','#7bd389'],deck:['頂板','#e8d36a']};
 const SN={wall:'牆板',k:'K板',beam:'梁板',deck:'頂板'};
-const HOW={direct:'',leader:'標籤用引線指到這塊',near:'標籤寫在板子外面，依位置和尺寸配對',stack:'同一格疊放的第二塊',ext:'延伸板，疊在原牆板上方',guess:'圖上沒寫編號，依前後順序推測（未確認）',orphan:'圖上只有標籤、沒畫板子，這個紅點是標籤的位置',none:'圖上沒有編號'};
+const HOW={direct:'',leader:'',near:'標籤在板外配對',stack:'疊放第二塊',ext:'延伸板',guess:'編號推測',orphan:'只有標籤沒畫板',none:'圖上無編號'};
 const STRUCT_COL='#7a7f88';
 const show={wall:1,k:1,beam:1,deck:1,struct:0,labels:1};
 const lock={wall:0,k:0,beam:0,deck:0};
-let gz=null,gzHover=-1;let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
+let gz=null,gzHover=-1;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
 const cv=document.getElementById('c'),gl=cv.getContext('webgl',{antialias:true});
 const lc=document.getElementById('lab'),lx=lc.getContext('2d');
 const toastEl=document.getElementById('toast');let tt=0;function toast(s){toastEl.textContent=s;toastEl.style.display='block';clearTimeout(tt);tt=setTimeout(()=>toastEl.style.display='none',1600)}
@@ -129,6 +129,7 @@ const PN=D.panels;
 const off=PN.map(()=>[0,0,0]),scl=PN.map(()=>[1,1,1]),names=PN.map(()=>null);
 const UNK=new Set(['none','guess','orphan']);
 const dcode=i=>names[i]||PN[i].code;
+PN.forEach(p=>{if(p.z[0]<0){p.z=[0,p.z[1]-p.z[0]]}});
 PN.forEach((p,i)=>{p.code=p.code||'';const xs=p.p.map(q=>q[0]),ys=p.p.map(q=>q[1]);p.b0=[Math.min(...xs),Math.min(...ys),p.z[0]];p.b1=[Math.max(...xs),Math.max(...ys),p.z[1]];p.id=i;
  p.key=(p.code.replace('？','')+' '+p.size).toUpperCase().replace(/\s+/g,' ')});
 const boxAt=(i,o,s)=>{const p=PN[i];o=o||off[i];s=s||scl[i];return [p.b0.map((v,k)=>v+o[k]),p.b0.map((v,k)=>v+(p.b1[k]-v)*s[k]+o[k])]};
@@ -193,7 +194,7 @@ function ensureFB(W,H){if(fb&&fw===W&&fh===H)return;fw=W;fh=H;if(!fb){fb=gl.crea
  gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,fbt,0);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,fbr);gl.bindFramebuffer(gl.FRAMEBUFFER,null)}
 function drawRuns(R,mode_,vis){let run=null;const fl=()=>{if(run){gl.drawArrays(mode_,run[0],run[1]);run=null}};
  for(let i=0;i<PN.length;i++){if(!vis(i)){fl();continue}const [st,n]=R[i];if(run&&run[0]+run[1]===st)run[1]+=n;else{fl();run=[st,n]}}fl()}
-const visP=i=>show[PN[i].s];
+const visP=i=>show[PN[i].s]&&!boxed.has(i);
 function draw(){
  if(anim){const k=Math.min(1,(performance.now()-anim.t0)/350),e=k*(2-k);cam.tgt=anim.from.map((v,j)=>v+(anim.to[j]-v)*e);if(k>=1)anim=null;else req()}
  const dpr=Math.min(devicePixelRatio||1,2),W=cv.clientWidth*dpr|0,H=cv.clientHeight*dpr|0;
@@ -215,7 +216,7 @@ function draw(){
  lx.clearRect(0,0,W,H);
  if(show.labels){const fs=Math.round(11*dpr);lx.font=`600 ${fs}px system-ui,"Microsoft JhengHei",sans-serif`;lx.textAlign='center';lx.textBaseline='middle';
   const boxes=[],cand=[];
-  for(const p of PN){const i=p.id;if(!show[p.s])continue;if(!dcode(i)&&!p.size)continue;const c=ctr(i);if(c[2]>clipz)continue;
+  for(const p of PN){const i=p.id;if(!show[p.s]||boxed.has(i))continue;if(!dcode(i)&&!p.size)continue;const c=ctr(i);if(c[2]>clipz)continue;
    const s=proj(M,c[0],c[1],c[2],W,H);if(!s||s[0]<0||s[1]<0||s[0]>=W||s[1]>=H)continue;
    const px=(s[0]/2)|0,py=ph-1-((s[1]/2)|0),k=(py*pw+px)*4,id=pickPix[k]|(pickPix[k+1]<<8)|(pickPix[k+2]<<16);
    const hl=(match&&match.has(i))||SEL.has(i);
@@ -230,15 +231,15 @@ function draw(){
    lx.fillStyle=hl?'#ffd84d':'#fff';if(l2){lx.fillText(l1,s[0],s[1]-fs*.6);lx.fillStyle=hl?'#ffe9a0':'#cfd6df';lx.fillText(l2,s[0],s[1]+fs*.6)}else lx.fillText(l1,s[0],s[1])}}
  gz=null;
  if(mode==='edit'&&sel>=0&&!lock[PN[sel].s]&&show[PN[sel].s]){const c=ctr(sel),o=proj(M,c[0],c[1],c[2],W,H);if(o){const cols=['#ff5b5b','#4dff7a','#5ba8ff'],nm=['X 左右','Y 前後','Z 上下'];
-  const LEN=95*dpr;gz={o:[o[0]/dpr,o[1]/dpr],tips:[]};
+  const LEN=(SEL.size>1?62:78)*dpr,GAP=16*dpr;gz={o:[o[0]/dpr,o[1]/dpr],tips:[]};
   for(let k=0;k<3;k++){const e=[0,0,0];e[k]=200;const q=proj(M,c[0]+e[0],c[1]+e[1],c[2]+e[2],W,H);if(!q){gz.tips.push(null);continue}
    let dx=q[0]-o[0],dy=q[1]-o[1];const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const tip=[o[0]+dx*LEN,o[1]+dy*LEN];gz.tips.push([tip[0]/dpr,tip[1]/dpr]);
-   const act=k===axis||k===gzHover;lx.globalAlpha=act?1:.75;lx.strokeStyle='rgba(0,0,0,.6)';lx.lineWidth=9*dpr;lx.beginPath();lx.moveTo(o[0],o[1]);lx.lineTo(tip[0],tip[1]);lx.stroke();
-   lx.strokeStyle=cols[k];lx.lineWidth=(act?6:4)*dpr;lx.beginPath();lx.moveTo(o[0],o[1]);lx.lineTo(tip[0],tip[1]);lx.stroke();
+   const act=k===axis||k===gzHover;lx.globalAlpha=act?1:.7;const s0=[o[0]+dx*GAP,o[1]+dy*GAP];lx.strokeStyle='rgba(0,0,0,.6)';lx.lineWidth=7*dpr;lx.beginPath();lx.moveTo(s0[0],s0[1]);lx.lineTo(tip[0],tip[1]);lx.stroke();
+   lx.strokeStyle=cols[k];lx.lineWidth=(act?5:3)*dpr;lx.beginPath();lx.moveTo(s0[0],s0[1]);lx.lineTo(tip[0],tip[1]);lx.stroke();
    // arrow head
    const hs=14*dpr;lx.fillStyle=cols[k];lx.beginPath();lx.moveTo(tip[0]+dx*hs,tip[1]+dy*hs);lx.lineTo(tip[0]-dy*hs*.55,tip[1]+dx*hs*.55);lx.lineTo(tip[0]+dy*hs*.55,tip[1]-dx*hs*.55);lx.closePath();lx.fill();lx.strokeStyle='rgba(0,0,0,.6)';lx.lineWidth=1.5*dpr;lx.stroke();
    lx.font=`700 ${Math.round(13*dpr)}px system-ui,"Microsoft JhengHei",sans-serif`;lx.lineWidth=4*dpr;lx.strokeText(nm[k],tip[0]+dx*hs*2.2,tip[1]+dy*hs*2.2);lx.fillText(nm[k],tip[0]+dx*hs*2.2,tip[1]+dy*hs*2.2)}
-  lx.globalAlpha=1;lx.fillStyle='#fff';lx.beginPath();lx.arc(o[0],o[1],5*dpr,0,7);lx.fill()}}
+  lx.globalAlpha=1}}
 }
 let raf=0;function req(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;draw()})}
 addEventListener('resize',req);
@@ -248,14 +249,15 @@ function pushUndo(ids){ids=[].concat(ids);undo.push(ids.map(i=>[i,off[i].slice()
 function doUndo(){const u_=undo.pop();if(!u_){toast('沒有可以復原的');return}for(const [i,o,s,n] of u_){off[i]=o;scl[i]=s;names[i]=n;applyOff(i)}showInfo();recolor();autosave()}
 function setOff(i,o){off[i]=o.map(v=>Math.round(v));applyOff(i);showInfo(true);req();autosave()}
 const movable=()=>[...SEL].filter(i=>!lock[PN[i].s]);
-function moveGroup(d){const ids=movable();if(!ids.length)return;pushUndo(ids);for(const i of ids){off[i]=off[i].map((v,k)=>Math.round(v+d[k]));applyOff(i)}showInfo(true);req();autosave()}
+function clampZ(ids,starts,dz){let lo=-1e9;ids.forEach((i,n)=>{lo=Math.max(lo,-(PN[i].b0[2]+starts[n][2]))});return Math.max(dz,lo)}
+function moveGroup(d){const ids=movable();if(!ids.length)return;d=d.slice();d[2]=clampZ(ids,ids.map(i=>off[i]),d[2]);pushUndo(ids);for(const i of ids){off[i]=off[i].map((v,k)=>Math.round(v+d[k]));applyOff(i)}showInfo(true);req();autosave()}
 // ---------- snapping ----------
 function snapDelta(i,a,raw){ // raw: desired offset along axis a
  const step=+document.getElementById('step').value;
  if(!snapOn)return Math.round(raw/5)*5;
  const o=off[i].slice();o[a]=raw;const [mn,mx]=boxAt(i,o);
  let best=null;const thr=40,R=400;
- for(let j=0;j<PN.length;j++){if(j===i||SEL.has(j)||!show[PN[j].s])continue;const jm=bmin(j),jM=bmax(j);
+ for(let j=0;j<PN.length;j++){if(j===i||SEL.has(j)||!show[PN[j].s]||boxed.has(j))continue;const jm=bmin(j),jM=bmax(j);
   let near=true;for(let k=0;k<3;k++){if(k===a)continue;if(jm[k]>mx[k]+R||jM[k]<mn[k]-R){near=false;break}}if(!near)continue;
   for(const c of [jm[a],jM[a]])for(const e of [mn[a],mx[a]]){const d=c-e;if(Math.abs(d)<thr&&(best===null||Math.abs(d)<Math.abs(best)))best=d}}
  return best!==null?raw+best:Math.round(raw/5)*5}
@@ -266,7 +268,7 @@ function pickAt(x,y){if(!pickPix)return -1;const dpr=Math.min(devicePixelRatio||
 function axisScreen(i){const dpr=Math.min(devicePixelRatio||1,2),{M}=mats(cv.width,cv.height),c=ctr(i);const e=[0,0,0];e[axis]=1000;
  const a=proj(M,c[0],c[1],c[2],cv.width,cv.height),b=proj(M,c[0]+e[0],c[1]+e[1],c[2]+e[2],cv.width,cv.height);if(!a||!b)return null;return [(b[0]-a[0])/dpr,(b[1]-a[1])/dpr]}
 function gzAt(x,y){if(!gz)return -1;let best=-1,bd=16;for(let k=0;k<3;k++){const tp=gz.tips[k];if(!tp)continue;const ax=tp[0]-gz.o[0],ay=tp[1]-gz.o[1],L2=ax*ax+ay*ay||1;
-  let s=((x-gz.o[0])*ax+(y-gz.o[1])*ay)/L2;if(s<.15||s>1.35)continue;s=Math.min(s,1);const d=Math.hypot(x-gz.o[0]-ax*s,y-gz.o[1]-ay*s);if(d<bd){bd=d;best=k}}return best}
+  let s=((x-gz.o[0])*ax+(y-gz.o[1])*ay)/L2;if(s<.3||s>1.35)continue;s=Math.min(s,1);const d=Math.hypot(x-gz.o[0]-ax*s,y-gz.o[1]-ay*s);if(d<bd){bd=d;best=k}}return best}
 function setAxis(k){axis=k;document.querySelectorAll('.ax').forEach(x=>x.classList.toggle('on',+x.dataset.a===k));req()}
 cv.addEventListener('pointermove',e=>{if(pts.size)return;const h=mode==='edit'?gzAt(e.clientX,e.clientY):-1;if(h!==gzHover){gzHover=h;cv.style.cursor=h>=0?'grab':'';req()}});
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);btn=e.button;last=null;moved_=0;downAt=[e.clientX,e.clientY];drag=null;
@@ -277,13 +279,15 @@ cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(
 cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const prev=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
  if(downAt)moved_=Math.max(moved_,Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]));
  if(drag&&pts.size===1){const dx=e.clientX-drag.x,dy=e.clientY-drag.y,v=drag.v,L2=v[0]*v[0]+v[1]*v[1];const mm=(dx*v[0]+dy*v[1])/L2*1000;
-  const k=drag.ids.indexOf(drag.i),s0=drag.starts[k][axis],d=Math.round(snapDelta(drag.i,axis,s0+mm)-s0);
+  const k=drag.ids.indexOf(drag.i),s0=drag.starts[k][axis];let d=Math.round(snapDelta(drag.i,axis,s0+mm)-s0);if(axis===2)d=clampZ(drag.ids,drag.starts,d);
   drag.ids.forEach((j,n)=>{const o=drag.starts[n].slice();o[axis]+=d;off[j]=o;applyOff(j)});showInfo(true);req();return}
  if(pts.size===1){const dx=e.clientX-prev[0],dy=e.clientY-prev[1];if(btn===2||e.shiftKey)pan(dx,dy);else{cam.yaw-=dx*.008;cam.pitch=Math.max(-1.4,Math.min(1.55,cam.pitch+dy*.008));req()}}
  else if(pts.size===2){drag=null;moved_=99;const [a,b]=[...pts.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]),cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2;
   if(last){cam.dist=Math.max(500,Math.min(80000,cam.dist*last.d/d));pan(cx-last.cx,cy-last.cy)}last={d,cx,cy};req()}});
 const upH=e=>{const tap=pts.size===1&&moved_<6;pts.delete(e.pointerId);last=null;
- if(drag){const wasGz=drag.gz;if(moved_<3)undo.pop();else autosave();drag=null;if(moved_>=3||wasGz){showInfo();return}}
+ if(drag){const wasGz=drag.gz;if(moved_<3)undo.pop();else autosave();drag=null;
+  if(moved_>=3){showInfo();return}
+  if(wasGz){const h=pickAt(e.clientX,e.clientY);if(h<0||SEL.has(h)){showInfo();return}select(h,false,e.shiftKey||multi);return}}
  if(tap&&e.type==='pointerup')select(pickAt(e.clientX,e.clientY),true,e.shiftKey||multi)};
 cv.addEventListener('pointerup',upH);cv.addEventListener('pointercancel',upH);cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('wheel',e=>{e.preventDefault();cam.dist=Math.max(500,Math.min(80000,cam.dist*Math.exp(e.deltaY*.001)));req()},{passive:false});
@@ -299,9 +303,9 @@ function select(i,focus,add){if(i>=0&&mode==='edit'&&lock[PN[i].s]){toast(SN[PN[
  if(sel>=0&&focus)focusTo(ctr(sel));showInfo();recolor()}
 function showInfo(light){if(sel<0){info.style.display='none';return}const p=PN[sel],o=off[sel],mn=bmin(sel),mx=bmax(sel);
  const unk=UNK.has(p.how)&&SEL.size===1,dm=dims(sel);
- infoT.innerHTML=`${SEL.size>1?`<div style="color:#ffb86b;font-size:14px">已選 ${SEL.size} 塊（一起移動）・下面顯示最後點的那塊</div>`:''}<div class="c">${dcode(sel)||'（圖上無編號）'}</div><div>${p.size||'（無尺寸標註）'}</div><div style="color:#9aa;font-size:13px;margin-top:4px">${SN[p.s]}・高度 ${Math.round(mn[2])}～${Math.round(mx[2])} mm${moved(sel)?`　<span style="color:#ffb86b">已移動 X${o[0]} Y${o[1]} Z${o[2]}</span>`:''}</div>${HOW[p.how]?`<div style="color:#f6a;font-size:13px;margin-top:2px">${HOW[p.how]}</div>`:''}`;
+ infoT.innerHTML=`${SEL.size>1?`<div style="color:#ffb86b;font-size:12px">已選 ${SEL.size} 塊，一起移動</div>`:''}<div><span class="c">${dcode(sel)||'（無編號）'}</span>　${p.size||''}</div><div style="color:#9aa;font-size:12px">${SN[p.s]}・${Math.round(mn[2])}～${Math.round(mx[2])}${moved(sel)?`　<span style="color:#ffb86b">移 ${o[0]},${o[1]},${o[2]}</span>`:''}${HOW[p.how]?`　<span style="color:#f6a">${HOW[p.how]}</span>`:''}</div>`;
  ed.style.display=mode==='edit'&&!lock[p.s]?'flex':'none';
- document.getElementById('unk').style.display=mode==='edit'&&unk?'flex':'none';
+ document.getElementById('unk').style.display=unk?'flex':'none';
  if(unk){for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=dm[k]}const ne=document.getElementById('nm');if(document.activeElement!==ne)ne.value=names[sel]||''}
  for(const [k,id] of [[0,'ox'],[1,'oy'],[2,'oz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=o[k]}
  info.style.display='block'}
@@ -313,6 +317,8 @@ for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']])document.getElementById(id).add
 document.getElementById('nm').addEventListener('change',e=>{if(sel<0)return;pushUndo(sel);names[sel]=e.target.value.trim()||null;showInfo();req();autosave()});
 document.getElementById('resetOne').onclick=()=>{const ids=movable();if(!ids.length)return;pushUndo(ids);for(const i of ids){off[i]=[0,0,0];scl[i]=[1,1,1];names[i]=null;applyOff(i)}showInfo();req();autosave()};
 document.getElementById('desel').onclick=()=>select(-1);
+document.getElementById('moreB').onclick=()=>{const m=document.getElementById('more');const on=m.style.display==='none';m.style.display=on?'flex':'none';document.getElementById('moreB').classList.toggle('on',on)};
+document.getElementById('toBox').onclick=()=>{const ids=movable();if(!ids.length)return;ids.forEach(i=>boxed.add(i));select(-1);toast(`已收進收納箱 ${ids.length} 塊`);refreshBar();req();autosave()};
 function refreshSelColors(){recolor()}
 info.addEventListener('pointerdown',e=>e.stopPropagation());
 // ---------- search ----------
@@ -323,16 +329,16 @@ function doSearch(){const s=norm(q.value);if(!s){match=null;res.style.display='n
  for(const p of PN){const k=p.key;let ok;if(/^[A-Z]{1,3}\d?-/.test(s)&&!s.includes(' ')){const c=p.code.toUpperCase().replace('？','');ok=c===s||c.startsWith(s+'-')||c.startsWith(s+'T')}else ok=k.includes(s)||terms.every(t=>k.includes(t));if(ok){m.add(p.id);list.push(p)}}
  if(!list.length&&/^[A-Z]{1,3}\d?-/.test(s))for(const p of PN)if(p.code.toUpperCase().startsWith(s)){m.add(p.id);list.push(p)}
  match=m;cnt.textContent=`找到 ${m.size} 塊`;
- res.innerHTML=list.slice(0,80).map(p=>`<div data-i="${p.id}"><b>${p.code||'—'}</b>${p.how==='guess'?' <span style="color:#f6a">推測</span>':p.how==='orphan'?' <span style="color:#f66">沒畫板</span>':''}　${p.size}　<span style="color:#9aa">${SN[p.s]}</span></div>`).join('')+(list.length>80?`<div style="color:#9aa">…還有 ${list.length-80} 塊</div>`:'');
+ res.innerHTML=list.slice(0,80).map(p=>`<div data-i="${p.id}"><b>${dcode(p.id)||'—'}</b>${boxed.has(p.id)?' <span style="color:#ffb86b">📦收納箱</span>':''}${p.how==='guess'?' <span style="color:#f6a">推測</span>':p.how==='orphan'?' <span style="color:#f66">沒畫板</span>':''}　${p.size}　<span style="color:#9aa">${SN[p.s]}</span></div>`).join('')+(list.length>80?`<div style="color:#9aa">…還有 ${list.length-80} 塊</div>`:'');
  res.style.display=list.length?'block':'none';recolor()}
 q.addEventListener('input',doSearch);
 document.getElementById('clr').onclick=()=>{q.value='';doSearch()};
 res.addEventListener('click',e=>{const d=e.target.closest('[data-i]');if(!d)return;const p=PN[+d.dataset.i];
- if(!show[p.s]){show[p.s]=1;refreshBar()}cam.dist=Math.max(2500,Math.min(cam.dist,6000));res.style.display='none';select(p.id,true)});
+ if(boxed.has(p.id)){boxed.delete(p.id);toast('已從收納箱放出來');autosave()}if(!show[p.s]){show[p.s]=1;refreshBar()}cam.dist=Math.max(2500,Math.min(cam.dist,6000));res.style.display='none';select(p.id,true)});
 q.addEventListener('focus',()=>{if(match&&res.innerHTML)res.style.display='block'});
 // ---------- bars ----------
 const bar=document.getElementById('bar'),ebar=document.getElementById('ebar');
-function refreshBar(){bar.innerHTML='';
+function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='function')applyFold()},0);
  for(const k of ['wall','k','beam','deck']){const g=document.createElement('div');g.className='lay';
   const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=`<span class="sw" style="background:${SHEET[k][1]}"></span>${SHEET[k][0]}`;
   b.onclick=()=>{show[k]=!show[k];if(!show[k]&&sel>=0&&PN[sel].s===k)select(-1);refreshBar();req()};g.appendChild(b);
@@ -345,19 +351,23 @@ function refreshBar(){bar.innerHTML='';
  for(const [t,f] of [['↺ 視角',()=>{cam=C0();req()}],['⬇ 俯視',()=>{cam.pitch=1.55;cam.yaw=-Math.PI/2;req()}],['⬆ 仰看',()=>{cam.pitch=-1.2;req()}]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;bar.appendChild(b)}
  ebar.style.display=mode==='edit'?'flex':'none';ebar.innerHTML='';
  if(mode==='edit'){const sn=document.createElement('div');sn.className='t'+(snapOn?' on':'');sn.textContent='🧲 吸附'+(snapOn?'開':'關');sn.onclick=()=>{snapOn=!snapOn;refreshBar()};ebar.appendChild(sn);
+  const bx=document.createElement('div');bx.className='t';bx.textContent=`📦 收納箱 ${boxed.size}`;bx.onclick=openBox;ebar.appendChild(bx);
   const mu=document.createElement('div');mu.className='t'+(multi?' on':'');mu.textContent='☑ 多選'+(multi?'開':'關');mu.onclick=()=>{multi=!multi;refreshBar()};ebar.appendChild(mu);
   for(const [t,f] of [['↶ 復原',doUndo],['💾 存檔／讀檔',openSaves]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;ebar.appendChild(b)}
-  const n=document.createElement('span');n.style.cssText='font-size:13px;color:#ffb86b';n.textContent=`已調整 ${PN.filter(p=>moved(p.id)).length} 塊`;ebar.appendChild(n)}}
+  const n=document.createElement('span');n.style.cssText='font-size:12px;color:#ffb86b';n.textContent=`已調整 ${PN.filter(p=>moved(p.id)).length} 塊`;ebar.appendChild(n)}}
+let folded=innerWidth<600;try{const f=localStorage.getItem('khi_fold');if(f!==null)folded=f==='1'}catch(e){}
+function applyFold(){bar.style.display=folded?'none':'flex';ebar.style.display=(!folded&&mode==='edit')?'flex':'none';document.getElementById('fold').classList.toggle('on',folded);document.getElementById('fold').textContent=folded?'☰ 展開':'☰'}
+document.getElementById('fold').onclick=()=>{folded=!folded;try{localStorage.setItem('khi_fold',folded?'1':'0')}catch(e){}applyFold()};
 function setMode(m){mode=m;document.getElementById('mView').classList.toggle('on',m==='view');document.getElementById('mEdit').classList.toggle('on',m==='edit');refreshBar();showInfo();recolor()}
 document.getElementById('mView').onclick=()=>setMode('view');document.getElementById('mEdit').onclick=()=>setMode('edit');
 // ---------- saves ----------
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
-function snapshot(){const moves={},dimsO={},nm={};off.forEach((o,i)=>{if(o[0]||o[1]||o[2])moves[i]=o;const s=scl[i];if(s[0]!==1||s[1]!==1||s[2]!==1)dimsO[i]=dims(i);if(names[i])nm[i]=names[i]});return {room:ROOM,moves,dims:dimsO,names:nm,lock:{...lock},time:new Date().toLocaleString('zh-TW')}}
+function snapshot(){const box=[...boxed];const moves={},dimsO={},nm={};off.forEach((o,i)=>{if(o[0]||o[1]||o[2])moves[i]=o;const s=scl[i];if(s[0]!==1||s[1]!==1||s[2]!==1)dimsO[i]=dims(i);if(names[i])nm[i]=names[i]});return {room:ROOM,moves,dims:dimsO,names:nm,box,lock:{...lock},time:new Date().toLocaleString('zh-TW')}}
 function restore(s){for(let i=0;i<PN.length;i++){const o=(s.moves&&s.moves[i])||[0,0,0],p=PN[i],dm=s.dims&&s.dims[i];
   const sc=dm?[0,1,2].map(k=>dm[k]/((p.b1[k]-p.b0[k])||1)):[1,1,1];names[i]=(s.names&&s.names[i])||null;
   if(off[i].some((v,k)=>v!==o[k])||scl[i].some((v,k)=>v!==sc[k])){off[i]=o.slice();scl[i]=sc;applyOff(i)}}
- if(s.lock)Object.assign(lock,s.lock);undo.length=0;showInfo();refreshBar();recolor()}
+ boxed.clear();(s.box||[]).forEach(i=>boxed.add(+i));if(s.lock)Object.assign(lock,s.lock);undo.length=0;showInfo();refreshBar();recolor()}
 let asT=0;function autosave(){clearTimeout(asT);asT=setTimeout(()=>{lsSet(LSKEY+'_current',snapshot());refreshBar()},300)}
 function saves(){return lsGet(LSKEY+'_saves')||[]}
 const modal=document.getElementById('modal'),mbox=document.getElementById('mbox');
@@ -376,17 +386,25 @@ function openSaves(){const S=saves();
  mbox.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>exportFile(S[+b.dataset.x]));
  mbox.querySelector('#sexp').onclick=()=>{const s=snapshot();s.name=mbox.querySelector('#sname').value.trim()||'目前狀態';exportFile(s)};
  mbox.querySelector('#simp').onclick=()=>document.getElementById('file').click();
- mbox.querySelector('#sall').onclick=()=>{if(!confirmBox('全部板子回到原位？'))return;restore({moves:{},dims:{},names:{},lock:{wall:0,k:0,beam:0,deck:0}});autosave();modal.style.display='none'};
+ mbox.querySelector('#sall').onclick=()=>{if(!confirmBox('全部板子回到原位？'))return;restore({moves:{},dims:{},names:{},box:[],lock:{wall:0,k:0,beam:0,deck:0}});autosave();modal.style.display='none'};
  mbox.querySelector('#sclose').onclick=()=>modal.style.display='none'}
 let confirmArm=null;function confirmBox(msg){if(confirmArm===msg){confirmArm=null;return true}confirmArm=msg;toast(msg+'（再按一次確認）');setTimeout(()=>{if(confirmArm===msg)confirmArm=null},3000);return false}
 modal.addEventListener('pointerdown',e=>{if(e.target===modal)modal.style.display='none'});
+function openBox(){const L=[...boxed];
+ mbox.innerHTML=`<h3>📦 收納箱（${L.length} 塊）</h3><div style="color:#9aa;font-size:13px;margin-bottom:6px">不確定的料先放這裡，畫面上不顯示。按「放出來」會回到原本的位置。</div>
+ ${L.length?L.map(i=>`<div class="sv"><div class="n"><b style="color:#ffd84d">${dcode(i)||'（無編號）'}</b>　${PN[i].size||''}<br><small>${SN[PN[i].s]}</small></div><div class="t" data-r="${i}">放出來</div></div>`).join(''):'<div style="color:#9aa;padding:8px 0">空的</div>'}
+ <div class="row" style="margin-top:10px">${L.length?'<div class="t" id="bxAll">全部放出來</div>':''}<div class="t" id="bxClose">關閉</div></div>`;
+ modal.style.display='flex';
+ mbox.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const i=+b.dataset.r;boxed.delete(i);if(!show[PN[i].s])show[PN[i].s]=1;refreshBar();autosave();modal.style.display='none';select(i,true)});
+ const a=mbox.querySelector('#bxAll');if(a)a.onclick=()=>{boxed.clear();refreshBar();req();autosave();openBox()};
+ mbox.querySelector('#bxClose').onclick=()=>{modal.style.display='none';req()}}
 function exportFile(s){const ids=new Set([...Object.keys(s.moves||{}),...Object.keys(s.dims||{}),...Object.keys(s.names||{})]);
- const full={...s,format:'formwork3d-v2',panels:[...ids].map(i=>{i=+i;const p=PN[i],o=(s.moves&&s.moves[i])||[0,0,0],dm=(s.dims&&s.dims[i])||[p.b1[0]-p.b0[0],p.b1[1]-p.b0[1],p.b1[2]-p.b0[2]];return {i,code:p.code,name:(s.names&&s.names[i])||'',size:p.size,how:p.how,sheet:SN[p.s],move:o,dims:dm,box:[p.b0.map((v,k)=>Math.round(v+o[k])),p.b0.map((v,k)=>Math.round(v+o[k]+dm[k]))]}})};
+ const full={...s,format:'formwork3d-v3',boxed:(s.box||[]).map(i=>({i:+i,code:PN[i].code,name:(s.names&&s.names[i])||'',size:PN[i].size,sheet:SN[PN[i].s]})),panels:[...ids].map(i=>{i=+i;const p=PN[i],o=(s.moves&&s.moves[i])||[0,0,0],dm=(s.dims&&s.dims[i])||[p.b1[0]-p.b0[0],p.b1[1]-p.b0[1],p.b1[2]-p.b0[2]];return {i,code:p.code,name:(s.names&&s.names[i])||'',size:p.size,how:p.how,sheet:SN[p.s],move:o,dims:dm,box:[p.b0.map((v,k)=>Math.round(v+o[k])),p.b0.map((v,k)=>Math.round(v+o[k]+dm[k]))]}})};
  const blob=new Blob([JSON.stringify(full,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${ROOM}房_調整_${(s.name||'存檔').replace(/[\\/:*?"<>|]/g,'_')}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('已匯出檔案')}
 document.getElementById('file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const s=JSON.parse(await f.text());if(s.room&&s.room!==ROOM){toast('這是 '+s.room+' 房的檔案');return}
- const S=saves();s.name=s.name||f.name;S.unshift({room:ROOM,moves:s.moves||{},dims:s.dims||{},names:s.names||{},lock:s.lock||{},time:s.time||'',name:s.name});lsSet(LSKEY+'_saves',S);restore(s);autosave();toast('已匯入：'+s.name);modal.style.display='none'}catch(err){toast('檔案讀不出來')}e.target.value=''});
+ const S=saves();s.name=s.name||f.name;S.unshift({room:ROOM,moves:s.moves||{},dims:s.dims||{},names:s.names||{},box:s.box||[],lock:s.lock||{},time:s.time||'',name:s.name});lsSet(LSKEY+'_saves',S);restore(s);autosave();toast('已匯入：'+s.name);modal.style.display='none'}catch(err){toast('檔案讀不出來')}e.target.value=''});
 // ---------- start ----------
-const cur=lsGet(LSKEY+'_current');if(cur&&(Object.keys(cur.moves||{}).length||Object.keys(cur.dims||{}).length||Object.keys(cur.names||{}).length)){restore(cur);toast('已接續上次的調整')}
-refreshBar();recolor();
+const cur=lsGet(LSKEY+'_current');if(cur&&((cur.box||[]).length||Object.keys(cur.moves||{}).length||Object.keys(cur.dims||{}).length||Object.keys(cur.names||{}).length)){restore(cur);toast('已接續上次的調整')}
+refreshBar();applyFold();recolor();
 }
 </script></body></html>

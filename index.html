@@ -52,6 +52,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
  <div class="row">
   <div class="t" id="fold" title="收合">☰</div>
   <select id="room" style="font-size:16px;padding:7px 8px;border-radius:8px;background:#2c323b;color:#fff;border:1px solid #6b93cf;max-width:170px"></select>
+  <div class="t" id="refB">🗂 參照</div>
   <div class="t on" id="mView">👁 預覽</div><div class="t" id="mEdit">✏️ 編輯</div>
   <input id="q" placeholder="搜尋編號或尺寸，例如 U-W1-21、FWR 2440" autocomplete="off"><span id="cnt"></span><div class="t" id="clr">✕</div>
  </div>
@@ -94,6 +95,7 @@ function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.get
  const sel=document.getElementById('room');sel.innerHTML=idx.rooms.map(x=>`<option value="${x.id}"${x.id===R?' selected':''}>${ROOMNAME(x.id)}（${x.n} 塊）</option>`).join('');
  sel.onchange=()=>{location.hash=sel.value;location.reload()};
  let D;try{D=await (await fetch('rooms/'+encodeURIComponent(R)+'.json')).json()}catch(e){load.textContent='讀不到這間房的資料，請連網後再開一次';return}
+ window.KHI={idx,R};
  load.style.display='none';document.getElementById('ttl').textContent=idx.floor+'・'+ROOMNAME(R);
  start(D);
  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -190,6 +192,28 @@ function computeSeams(){const T=2,g=[],b=[];const L=[];
  gl.bindBuffer(gl.ARRAY_BUFFER,SB.bad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(b),gl.DYNAMIC_DRAW);SB.nb=b.length/3;
  seamStat={good:ng,bad:nb};const el=document.getElementById('seamInfo');if(el)el.textContent=`貼合 ${ng} 處${nb?`・重疊 ${nb} 處`:''}`;req()}
 let seamT=0;function seamsLater(){clearTimeout(seamT);seamT=setTimeout(()=>{if(seamOn)computeSeams()},250)}
+// ---------- 參照房間（半透明、不能編輯）----------
+const REF={geo:{},rooms:[]};
+function refKey(){return 'khi_ref_'+ROOM}
+function loadRefSel(){try{return JSON.parse(localStorage.getItem(refKey())||'[]')}catch(e){return []}}
+async function buildRefs(list){REF.rooms=list;for(const s in REF.geo){gl.deleteBuffer(REF.geo[s].pb);gl.deleteBuffer(REF.geo[s].nb);gl.deleteBuffer(REF.geo[s].eb)}REF.geo={};
+ const K=window.KHI;if(!K)return;const me=K.idx.rooms.find(x=>x.id===ROOM);if(!me){req();return}
+ const acc={};
+ for(const id of list){const info=K.idx.rooms.find(x=>x.id===id);if(!info)continue;let d;try{d=await (await fetch('rooms/'+encodeURIComponent(id)+'.json')).json()}catch(e){toast('讀不到 '+id);continue}
+  const dx=info.ox-me.ox,dy=info.oy-me.oy;
+  for(const p of d.panels){if(p.how==='orphan')continue;const a=acc[p.s]||(acc[p.s]={pos:[],nor:[],e:[]});const pp=p.p.map(q=>[q[0]+dx,q[1]+dy]);let z0=p.z[0],z1=p.z[1];if(z0<0){z1-=z0;z0=0}
+   prism(pp,z0,z1,(x,y,z,nx,ny,nz)=>{a.pos.push(x,y,z);a.nor.push(nx,ny,nz)});edges(pp,z0,z1,a.e)}}
+ for(const s in acc){const a=acc[s];REF.geo[s]={pb:mk(a.pos),nb:mk(a.nor),eb:mk(a.e),n:a.pos.length/3,en:a.e.length/3}}
+ const el=document.getElementById('refB');if(el){el.textContent=list.length?`🗂 參照 ${list.join('、')}`:'🗂 參照';el.classList.toggle('on',!!list.length)}
+ req()}
+function openRefs(){const K=window.KHI;if(!K)return;const cur=new Set(REF.rooms);
+ mbox.innerHTML=`<h3>🗂 參照房間（目前編輯：${ROOM}）</h3><div style="color:#9aa;font-size:13px;margin-bottom:8px">勾選的房間會用半透明顯示在旁邊，位置跟這間房對齊，不能選、不能動。</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px">${K.idx.rooms.filter(x=>x.id!==ROOM).map(x=>`<label class="t" style="justify-content:flex-start"><input type="checkbox" value="${x.id}" ${cur.has(x.id)?'checked':''} style="width:18px;height:18px"> ${x.id}</label>`).join('')}</div>
+ <div class="row" style="margin-top:12px"><div class="t on" id="refOk">套用</div><div class="t" id="refNone">全部取消</div><div class="t" id="refClose">關閉</div></div>`;
+ modal.style.display='flex';
+ mbox.querySelector('#refOk').onclick=()=>{const L=[...mbox.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);try{localStorage.setItem(refKey(),JSON.stringify(L))}catch(e){}modal.style.display='none';toast(L.length?'載入參照中…':'已取消參照');buildRefs(L)};
+ mbox.querySelector('#refNone').onclick=()=>{mbox.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false)};
+ mbox.querySelector('#refClose').onclick=()=>modal.style.display='none'}
 // ---------- shaders ----------
 function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o}
 function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);return p}
@@ -248,6 +272,12 @@ function draw(){
  gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform1f(u(PE,'clipz'),clipz);gl.uniform4f(u(PE,'uc'),.05,.06,.07,.7);attr(PE,'a',B.pe,3);drawRuns(eR,gl.LINES,visP);
  if(seamOn){gl.uniform4f(u(PE,'uc'),.2,1,1,1);attr(PE,'a',SB.good,3);gl.drawArrays(gl.LINES,0,SB.ng);gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.15,.15,1);attr(PE,'a',SB.bad,3);gl.drawArrays(gl.LINES,0,SB.nb);gl.enable(gl.DEPTH_TEST);attr(PE,'a',B.pe,3)}
  if(SEL.size){gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.95,.4,1);for(const i of SEL)if(show[PN[i].s])gl.drawArrays(gl.LINES,eR[i][0],eR[i][1]);gl.enable(gl.DEPTH_TEST)}
+ if(Object.keys(REF.geo).length){gl.useProgram(P);gl.uniformMatrix4fv(u(P,'m'),false,M);gl.uniform1f(u(P,'clipz'),clipz);gl.uniform1f(u(P,'useU'),1);offA(P,'c');
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+  for(const s in REF.geo){if(!show[s])continue;const g=REF.geo[s],c=hex(SHEET[s][1]);gl.uniform4f(u(P,'uc'),c[0]*.8+.1,c[1]*.8+.1,c[2]*.8+.1,.22);attr(P,'a',g.pb,3);attr(P,'n',g.nb,3);gl.drawArrays(gl.TRIANGLES,0,g.n)}
+  gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform4f(u(PE,'uc'),.75,.8,.9,.25);
+  for(const s in REF.geo){if(!show[s])continue;const g=REF.geo[s];attr(PE,'a',g.eb,3);gl.drawArrays(gl.LINES,0,g.en)}
+  gl.depthMask(true);gl.disable(gl.BLEND)}
  if(show.struct){gl.useProgram(P);gl.uniform1f(u(P,'useU'),1);const c=hex(STRUCT_COL);gl.uniform4f(u(P,'uc'),c[0],c[1],c[2],.35);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);attr(P,'a',B.spos,3);attr(P,'n',B.snor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,spos.length/3);gl.depthMask(true);gl.disable(gl.BLEND)}
  offA(P,'n');
@@ -463,5 +493,6 @@ document.getElementById('file').addEventListener('change',async e=>{const f=e.ta
 // ---------- start ----------
 const cur=lsGet(LSKEY+'_current');if(cur&&((cur.box||[]).length||Object.keys(cur.moves||{}).length||Object.keys(cur.dims||{}).length||Object.keys(cur.names||{}).length)){restore(cur);toast('已接續上次的調整')}
 refreshBar();applyFold();recolor();computeSeams();
+document.getElementById('refB').onclick=openRefs;{const L=loadRefSel();if(L.length)buildRefs(L)}
 }
 </script></body></html>

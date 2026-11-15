@@ -65,11 +65,12 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
    <div class="t ax x" data-a="0">X</div><div class="t ax y" data-a="1">Y</div><div class="t ax z on" data-a="2">Z</div>
    <select id="step" class="num" style="width:62px"><option>5</option><option selected>10</option><option>50</option><option>100</option><option>500</option></select>
    <div class="t" id="minus">－</div><div class="t" id="plus">＋</div>
-   <div class="t" id="toBox" title="丟進收納箱">📦</div><div class="t" id="resetOne" title="歸位">↺</div><div class="t" id="moreB" title="數值">⋯</div><div class="t" id="desel" title="取消選取">✕</div>
+   <div class="t" id="swapB">⇅ 與下方互換</div><div class="t" id="toBox" title="丟進收納箱">📦</div><div class="t" id="resetOne" title="歸位">↺</div><div class="t" id="moreB" title="數值">⋯</div><div class="t" id="desel" title="取消選取">✕</div>
   </div>
   <div id="more" style="display:none;flex-direction:column;gap:5px">
    <div class="row sm2">位移 X<input class="num" id="ox" type="number" step="5"> Y<input class="num" id="oy" type="number" step="5"> Z<input class="num" id="oz" type="number" step="5"></div>
-   <div class="row sm2" id="unk" style="display:none">編號<input class="num" id="nm" type="text" style="width:100px" placeholder="自己填"> 長X<input class="num" id="dx" type="number" step="5"> 寬Y<input class="num" id="dy" type="number" step="5"> 高Z<input class="num" id="dz" type="number" step="5"></div>
+   <div class="row sm2" id="dimrow">尺寸 長X<input class="num" id="dx" type="number" step="5"> 寬Y<input class="num" id="dy" type="number" step="5"> 高Z<input class="num" id="dz" type="number" step="5"></div>
+   <div class="row sm2" id="unk" style="display:none">編號<input class="num" id="nm" type="text" style="width:120px" placeholder="自己填"></div>
   </div>
  </div>
 </div>
@@ -341,10 +342,13 @@ function select(i,focus,add){if(i>=0&&mode==='edit'&&lock[PN[i].s]){toast(SN[PN[
  if(sel>=0&&focus)focusTo(ctr(sel));showInfo();recolor()}
 function showInfo(light){if(sel<0){info.style.display='none';return}const p=PN[sel],o=off[sel],mn=bmin(sel),mx=bmax(sel);
  const unk=UNK.has(p.how)&&SEL.size===1,dm=dims(sel);
+ document.getElementById('dimrow').style.display=SEL.size===1?'flex':'none';
+ for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=dm[k]}
+ const sw=document.getElementById('swapB');if(sw){sw.textContent=SEL.size===2?'⇅ 兩塊互換':'⇅ 與下方互換';sw.style.display=(SEL.size===1||SEL.size===2)?'':'none'}
  infoT.innerHTML=`${SEL.size>1?`<div style="color:#ffb86b;font-size:12px">已選 ${SEL.size} 塊，一起移動</div>`:''}<div><span class="c">${dcode(sel)||'（無編號）'}</span>　${p.size||''}</div><div style="color:#9aa;font-size:12px">${SN[p.s]}・<span style="color:#7bd0ff">底 ${Math.round(mn[2])}</span>　頂 ${Math.round(mx[2])}${moved(sel)?`　<span style="color:#ffb86b">移 ${o[0]},${o[1]},${o[2]}</span>`:''}${HOW[p.how]?`　<span style="color:#f6a">${HOW[p.how]}</span>`:''}${p.lift?`　<span style="color:#ffb86b">原本重疊，已上移 ${p.lift}</span>`:''}${/-(\d+)F$/.test(p.code)?`　<span style="color:#9fd">${p.code.match(/-(\d+)F$/)[1]}樓新增・沿用</span>`:''}</div>`;
  ed.style.display=mode==='edit'&&!lock[p.s]?'flex':'none';
  document.getElementById('unk').style.display=unk?'flex':'none';
- if(unk){for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=dm[k]}const ne=document.getElementById('nm');if(document.activeElement!==ne)ne.value=names[sel]||''}
+ if(unk){const ne=document.getElementById('nm');if(document.activeElement!==ne)ne.value=names[sel]||''}
  for(const [k,id] of [[0,'ox'],[1,'oy'],[2,'oz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=o[k]}
  info.style.display='block'}
 document.querySelectorAll('.ax').forEach(b=>b.onclick=()=>{axis=+b.dataset.a;document.querySelectorAll('.ax').forEach(x=>x.classList.toggle('on',x===b))});
@@ -355,6 +359,18 @@ for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']])document.getElementById(id).add
 document.getElementById('nm').addEventListener('change',e=>{if(sel<0)return;pushUndo(sel);names[sel]=e.target.value.trim()||null;showInfo();req();autosave()});
 document.getElementById('resetOne').onclick=()=>{const ids=movable();if(!ids.length)return;pushUndo(ids);for(const i of ids){off[i]=[0,0,0];scl[i]=[1,1,1];names[i]=null;applyOff(i)}showInfo();req();autosave()};
 document.getElementById('desel').onclick=()=>select(-1);
+function planOv(i,j){const T=2;for(const p of wrects(i))for(const q of wrects(j))if(Math.min(p[2],q[2])-Math.max(p[0],q[0])>T&&Math.min(p[3],q[3])-Math.max(p[1],q[1])>T)return true;return false}
+function findBelow(i){const b=bmin(i)[2];let best=-1,bt=-1e9;for(let j=0;j<PN.length;j++){if(j===i||boxed.has(j)||!show[PN[j].s])continue;const t=bmax(j)[2];if(t>b+5||t<=bt)continue;if(planOv(i,j)){best=j;bt=t}}return best}
+function swapPair(a,b){if(lock[PN[a].s]||lock[PN[b].s]){toast('有圖層上鎖');return}pushUndo([a,b]);
+ const A0=bmin(a),B0=bmin(b);
+ if(planOv(a,b)){ // 疊在一起：上下順序對調
+  const lo=Math.min(A0[2],B0[2]);const up=A0[2]>B0[2]?a:b,dn=up===a?b:a;const hUp=dims(up)[2];
+  off[up][2]+=lo-bmin(up)[2];off[dn][2]+=(lo+hUp)-bmin(dn)[2]}
+ else{for(let k=0;k<3;k++){off[a][k]+=B0[k]-A0[k];off[b][k]+=A0[k]-B0[k]}}
+ off[a]=off[a].map(Math.round);off[b]=off[b].map(Math.round);applyOff(a);applyOff(b);showInfo();recolor();autosave();toast('已互換位置（可以按復原）')}
+document.getElementById('swapB').onclick=()=>{const ids=[...SEL];
+ if(ids.length===2){swapPair(ids[0],ids[1]);return}
+ if(ids.length===1){const j=findBelow(ids[0]);if(j<0){toast('正下方沒有板子');return}swapPair(ids[0],j);SEL.add(j);recolor()}};
 document.getElementById('moreB').onclick=()=>{const m=document.getElementById('more');const on=m.style.display==='none';m.style.display=on?'flex':'none';document.getElementById('moreB').classList.toggle('on',on)};
 document.getElementById('toBox').onclick=()=>{const ids=movable();if(!ids.length)return;ids.forEach(i=>boxed.add(i));select(-1);toast(`已收進收納箱 ${ids.length} 塊`);refreshBar();req();autosave()};
 function refreshSelColors(){recolor()}

@@ -73,7 +73,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
   </div>
  </div>
 </div>
-<div id="help"><span id="ttl"></span><br><span style="color:#f6a">■</span> 粉紅＝編號推測　<span style="color:#f66">■</span> 紅點＝只有標籤沒畫板<br>單指拖曳＝旋轉　雙指＝縮放／平移　點一下＝選取</div>
+<div id="help"><span id="ttl"></span><br><span style="color:#f6a">■</span> 粉紅＝編號推測　<span style="color:#f66">■</span> 紅點＝只有標籤沒畫板<br>單指拖曳＝旋轉　雙指＝縮放／平移　點一下＝選取<br><span style="color:#3ff">━</span> 青線＝貼合　<span style="color:#f44">━</span> 紅線＝重疊</div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="toast"></div>
 <input type="file" id="file" accept=".json,application/json" style="display:none">
@@ -105,7 +105,7 @@ const HOW={direct:'',leader:'',near:'標籤在板外配對',stack:'疊放第二�
 const STRUCT_COL='#7a7f88';
 const show={wall:1,k:1,beam:1,deck:1,struct:0,labels:1};
 const lock={wall:0,k:0,beam:0,deck:0};
-let gz=null,gzHover=-1,solid=true;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
+let gz=null,gzHover=-1,solid=true,seamOn=true;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
 const cv=document.getElementById('c'),gl=cv.getContext('webgl',{antialias:true});
 const lc=document.getElementById('lab'),lx=lc.getContext('2d');
 const toastEl=document.getElementById('toast');let tt=0;function toast(s){toastEl.textContent=s;toastEl.style.display='block';clearTimeout(tt);tt=setTimeout(()=>toastEl.style.display='none',1600)}
@@ -166,6 +166,29 @@ function applyOff(i){const [st,n]=pR[i],o=off[i],s=scl[i],b=PN[i].b0;for(let v=s
  gl.bindBuffer(gl.ARRAY_BUFFER,B.pos);gl.bufferSubData(gl.ARRAY_BUFFER,st*12,POS.subarray(st*3,(st+n)*3));
  const [es,en]=eR[i];for(let v=es;v<es+en;v++)for(let k=0;k<3;k++)EP[v*3+k]=b[k]+(E0[v*3+k]-b[k])*s[k]+o[k];
  gl.bindBuffer(gl.ARRAY_BUFFER,B.pe);gl.bufferSubData(gl.ARRAY_BUFFER,es*12,EP.subarray(es*3,(es+en)*3))}
+// ---------- 接縫：貼合面(青) / 重疊(紅) ----------
+const SB={good:gl.createBuffer(),bad:gl.createBuffer(),ng:0,nb:0};let seamStat={good:0,bad:0};
+function computeSeams(){const T=2,g=[],b=[];const L=[];
+ for(let i=0;i<PN.length;i++){if(boxed.has(i)||!show[PN[i].s])continue;const [mn,mx]=boxAt(i);L.push({i,mn,mx,r:wrects(i)})}
+ L.sort((a,b)=>a.mn[0]-b.mn[0]);let ng=0,nb=0;
+ const rectXY=(arr,x0,y0,x1,y1,z)=>arr.push(x0,y0,z,x1,y0,z,x1,y0,z,x1,y1,z,x1,y1,z,x0,y1,z,x0,y1,z,x0,y0,z);
+ const rectX=(arr,x,y0,y1,z0,z1)=>arr.push(x,y0,z0,x,y1,z0,x,y1,z0,x,y1,z1,x,y1,z1,x,y0,z1,x,y0,z1,x,y0,z0);
+ const rectY=(arr,y,x0,x1,z0,z1)=>arr.push(x0,y,z0,x1,y,z0,x1,y,z0,x1,y,z1,x1,y,z1,x0,y,z1,x0,y,z1,x0,y,z0);
+ for(let a=0;a<L.length;a++){const A=L[a];
+  for(let c=a+1;c<L.length;c++){const B=L[c];if(B.mn[0]>A.mx[0]+T)break;
+   if(B.mn[1]>A.mx[1]+T||B.mx[1]<A.mn[1]-T||B.mn[2]>A.mx[2]+T||B.mx[2]<A.mn[2]-T)continue;
+   const z0=Math.max(A.mn[2],B.mn[2]),z1=Math.min(A.mx[2],B.mx[2]),oz=z1-z0;
+   let hit=false,bad=false;
+   for(const p of A.r)for(const q of B.r){const x0=Math.max(p[0],q[0]),x1=Math.min(p[2],q[2]),y0=Math.max(p[1],q[1]),y1=Math.min(p[3],q[3]),ox=x1-x0,oy=y1-y0;
+    if(ox>T&&oy>T&&oz>T){bad=true;rectXY(b,x0,y0,x1,y1,z0);rectXY(b,x0,y0,x1,y1,z1);continue}
+    if(ox>T&&oy>T&&Math.abs(oz)<=T){rectXY(g,x0,y0,x1,y1,(z0+z1)/2);hit=true;continue}
+    if(oz>T&&oy>T&&Math.abs(ox)<=T){rectX(g,(x0+x1)/2,y0,y1,z0,z1);hit=true;continue}
+    if(oz>T&&ox>T&&Math.abs(oy)<=T){rectY(g,(y0+y1)/2,x0,x1,z0,z1);hit=true;continue}}
+   if(hit)ng++;if(bad)nb++}}
+ gl.bindBuffer(gl.ARRAY_BUFFER,SB.good);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(g),gl.DYNAMIC_DRAW);SB.ng=g.length/3;
+ gl.bindBuffer(gl.ARRAY_BUFFER,SB.bad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(b),gl.DYNAMIC_DRAW);SB.nb=b.length/3;
+ seamStat={good:ng,bad:nb};const el=document.getElementById('seamInfo');if(el)el.textContent=`貼合 ${ng} 處${nb?`・重疊 ${nb} 處`:''}`;req()}
+let seamT=0;function seamsLater(){clearTimeout(seamT);seamT=setTimeout(()=>{if(seamOn)computeSeams()},250)}
 // ---------- shaders ----------
 function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o}
 function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);return p}
@@ -222,6 +245,7 @@ function draw(){
  if(cam.pitch>0){gl.uniform1f(u(P,'useU'),1);gl.uniform4f(u(P,'uc'),.33,.35,.38,1);attr(P,'a',B.fpos,3);attr(P,'n',B.fnor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,fpos.length/3)}
  gl.uniform1f(u(P,'useU'),0);attr(P,'a',B.pos,3);attr(P,'n',B.nor,3);attr(P,'c',B.col,4);drawRuns(pR,gl.TRIANGLES,visP);offA(P,'c');
  gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform1f(u(PE,'clipz'),clipz);gl.uniform4f(u(PE,'uc'),.05,.06,.07,.7);attr(PE,'a',B.pe,3);drawRuns(eR,gl.LINES,visP);
+ if(seamOn){gl.uniform4f(u(PE,'uc'),.2,1,1,1);attr(PE,'a',SB.good,3);gl.drawArrays(gl.LINES,0,SB.ng);gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.15,.15,1);attr(PE,'a',SB.bad,3);gl.drawArrays(gl.LINES,0,SB.nb);gl.enable(gl.DEPTH_TEST);attr(PE,'a',B.pe,3)}
  if(SEL.size){gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.95,.4,1);for(const i of SEL)if(show[PN[i].s])gl.drawArrays(gl.LINES,eR[i][0],eR[i][1]);gl.enable(gl.DEPTH_TEST)}
  if(show.struct){gl.useProgram(P);gl.uniform1f(u(P,'useU'),1);const c=hex(STRUCT_COL);gl.uniform4f(u(P,'uc'),c[0],c[1],c[2],.35);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);attr(P,'a',B.spos,3);attr(P,'n',B.snor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,spos.length/3);gl.depthMask(true);gl.disable(gl.BLEND)}
@@ -355,19 +379,21 @@ const bar=document.getElementById('bar'),ebar=document.getElementById('ebar');
 function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='function')applyFold()},0);
  for(const k of ['wall','k','beam','deck']){const g=document.createElement('div');g.className='lay';
   const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=`<span class="sw" style="background:${SHEET[k][1]}"></span>${SHEET[k][0]}`;
-  b.onclick=()=>{show[k]=!show[k];if(!show[k]&&sel>=0&&PN[sel].s===k)select(-1);refreshBar();req()};g.appendChild(b);
+  b.onclick=()=>{show[k]=!show[k];if(!show[k]&&sel>=0&&PN[sel].s===k)select(-1);refreshBar();seamsLater();req()};g.appendChild(b);
   if(mode==='edit'){const l=document.createElement('div');l.className='t lk'+(lock[k]?' warn':'');l.textContent=lock[k]?'🔒':'🔓';l.title='上鎖';
    l.onclick=()=>{lock[k]=!lock[k];if(lock[k]&&sel>=0&&PN[sel].s===k)select(-1);toast(SHEET[k][0]+(lock[k]?' 已上鎖，不能選、不能動':' 已解鎖'));refreshBar();recolor();autosave()};g.appendChild(l)}
   bar.appendChild(g)}
- for(const [k,t] of [['struct',`<span class="sw" style="background:${STRUCT_COL}"></span>混凝土`],['labels','🏷️ 編號']]){const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=t;b.onclick=()=>{show[k]=!show[k];refreshBar();req()};bar.appendChild(b)}
+ for(const [k,t] of [['struct',`<span class="sw" style="background:${STRUCT_COL}"></span>混凝土`],['labels','🏷️ 編號']]){const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=t;b.onclick=()=>{show[k]=!show[k];refreshBar();seamsLater();req()};bar.appendChild(b)}
+ const se=document.createElement('div');se.className='t'+(seamOn?' on':' off');se.innerHTML=`✨ 接縫 <span id="seamInfo" style="font-size:11px;color:#aee">${seamOn?`貼合 ${seamStat.good} 處${seamStat.bad?`・重疊 ${seamStat.bad} 處`:''}`:''}</span>`;
+ se.onclick=()=>{seamOn=!seamOn;if(seamOn)computeSeams();refreshBar();req()};bar.appendChild(se);
  const cw=document.createElement('div');cw.className='t';cw.innerHTML='切掉上方 <input id="clip" type="range" min="200" max="3500" step="50" value="'+(clipz>=1e9?3500:clipz)+'" style="width:110px"><span id="clipv">'+(clipz>=1e9?'全顯示':clipz)+'</span>';
  cw.addEventListener('pointerdown',e=>e.stopPropagation());const cl=cw.querySelector('input');cl.oninput=()=>{const v=+cl.value;clipz=v>=3500?1e9:v;cw.querySelector('#clipv').textContent=v>=3500?'全顯示':v;req()};bar.appendChild(cw);
  for(const [t,f] of [['↺ 視角',()=>{cam=C0();req()}],['⬇ 俯視',()=>{cam.pitch=1.55;cam.yaw=-Math.PI/2;req()}],['⬆ 仰看',()=>{cam.pitch=-1.2;req()}]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;bar.appendChild(b)}
  ebar.style.display=mode==='edit'?'flex':'none';ebar.innerHTML='';
  if(mode==='edit'){const sn=document.createElement('div');sn.className='t'+(snapOn?' on':'');sn.textContent='🧲 吸附'+(snapOn?'開':'關');sn.onclick=()=>{snapOn=!snapOn;refreshBar()};ebar.appendChild(sn);
   const so=document.createElement('div');so.className='t'+(solid?' on':'');so.textContent='🧱 實體'+(solid?'開':'關');so.onclick=()=>{solid=!solid;toast(solid?'實體開：板子互相不能穿過':'實體關：板子可以穿過去');refreshBar()};ebar.appendChild(so);
-  const bx=document.createElement('div');bx.className='t';bx.textContent=`📦 收納箱 ${boxed.size}`;bx.onclick=openBox;ebar.appendChild(bx);
   const mu=document.createElement('div');mu.className='t'+(multi?' on':'');mu.textContent='☑ 多選'+(multi?'開':'關');mu.onclick=()=>{multi=!multi;refreshBar()};ebar.appendChild(mu);
+  const bx=document.createElement('div');bx.className='t';bx.textContent=`📦 收納箱 ${boxed.size}`;bx.onclick=openBox;ebar.appendChild(bx);
   for(const [t,f] of [['↶ 復原',doUndo],['💾 存檔／讀檔',openSaves]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;ebar.appendChild(b)}
   const n=document.createElement('span');n.style.cssText='font-size:12px;color:#ffb86b';n.textContent=`已調整 ${PN.filter(p=>moved(p.id)).length} 塊`;ebar.appendChild(n)}}
 let folded=innerWidth<600;try{const f=localStorage.getItem('khi_fold');if(f!==null)folded=f==='1'}catch(e){}
@@ -383,7 +409,7 @@ function restore(s){for(let i=0;i<PN.length;i++){const o=(s.moves&&s.moves[i])||
   const sc=dm?[0,1,2].map(k=>dm[k]/((p.b1[k]-p.b0[k])||1)):[1,1,1];names[i]=(s.names&&s.names[i])||null;
   if(off[i].some((v,k)=>v!==o[k])||scl[i].some((v,k)=>v!==sc[k])){off[i]=o.slice();scl[i]=sc;applyOff(i)}}
  boxed.clear();(s.box||[]).forEach(i=>boxed.add(+i));if(s.lock)Object.assign(lock,s.lock);undo.length=0;showInfo();refreshBar();recolor()}
-let asT=0;function autosave(){clearTimeout(asT);asT=setTimeout(()=>{lsSet(LSKEY+'_current',snapshot());refreshBar()},300)}
+let asT=0;function autosave(){seamsLater();clearTimeout(asT);asT=setTimeout(()=>{lsSet(LSKEY+'_current',snapshot());refreshBar()},300)}
 function saves(){return lsGet(LSKEY+'_saves')||[]}
 const modal=document.getElementById('modal'),mbox=document.getElementById('mbox');
 function openSaves(){const S=saves();
@@ -420,6 +446,6 @@ document.getElementById('file').addEventListener('change',async e=>{const f=e.ta
  const S=saves();s.name=s.name||f.name;S.unshift({room:ROOM,moves:s.moves||{},dims:s.dims||{},names:s.names||{},box:s.box||[],lock:s.lock||{},time:s.time||'',name:s.name});lsSet(LSKEY+'_saves',S);restore(s);autosave();toast('已匯入：'+s.name);modal.style.display='none'}catch(err){toast('檔案讀不出來')}e.target.value=''});
 // ---------- start ----------
 const cur=lsGet(LSKEY+'_current');if(cur&&((cur.box||[]).length||Object.keys(cur.moves||{}).length||Object.keys(cur.dims||{}).length||Object.keys(cur.names||{}).length)){restore(cur);toast('已接續上次的調整')}
-refreshBar();applyFold();recolor();
+refreshBar();applyFold();recolor();computeSeams();
 }
 </script></body></html>

@@ -51,8 +51,8 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 <div id="top">
  <div class="row">
   <div class="t" id="fold" title="收合">☰</div>
-  <select id="room" style="font-size:16px;padding:7px 8px;border-radius:8px;background:#2c323b;color:#fff;border:1px solid #6b93cf;max-width:170px"></select>
-  <div class="t" id="refB">🗂 參照</div>
+  <select id="room" style="display:none;font-size:16px;padding:7px 8px;border-radius:8px;background:#2c323b;color:#fff;border:1px solid #6b93cf;max-width:170px"></select>
+  <div class="t" id="refB" style="display:none">🗂 參照</div>
   <div class="t on" id="mView">👁 預覽</div><div class="t" id="mEdit">✏️ 編輯</div>
   <input id="q" placeholder="搜尋編號或尺寸，例如 U-W1-21、FWR 2440" autocomplete="off"><span id="cnt"></span><div class="t" id="clr">✕</div>
  </div>
@@ -80,7 +80,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 <div id="toast"></div>
 <input type="file" id="file" accept=".json,application/json" style="display:none">
 <script>
-const ROOMNAME=r=>/^[A-Z]$/.test(r)?r+' 房':r;
+const ROOMNAME=r=>r==='ALL'?'全層':/^[A-Z]$/.test(r)?r+' 房':r;
 function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.getItem('khi_ok')==='1'}catch(e){}
  if(pass)return ok();const g=document.getElementById('gate');g.style.display='flex';const i=document.getElementById('pw');
  const go=()=>{if(i.value.trim()==='520'){try{localStorage.setItem('khi_ok','1')}catch(e){}g.style.display='none';ok()}else{document.getElementById('pwm').textContent='密碼不對';i.value='';i.focus()}};
@@ -90,7 +90,7 @@ function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.get
  const load=document.getElementById('loading');load.style.display='flex';
  let idx;try{idx=await (await fetch('rooms/index.json')).json()}catch(e){load.textContent='讀不到房間清單，請連網後再開一次';return}
  let R=decodeURIComponent(location.hash.slice(1));let last=null;try{last=localStorage.getItem('khi_room')}catch(e){}
- if(!idx.rooms.some(x=>x.id===R))R=idx.rooms.some(x=>x.id===last)?last:(idx.rooms.find(x=>x.id==='U')||idx.rooms[0]).id;
+ if(!idx.rooms.some(x=>x.id===R))R=idx.rooms.some(x=>x.id==='ALL')?'ALL':(idx.rooms.some(x=>x.id===last)?last:idx.rooms[0].id);
  try{localStorage.setItem('khi_room',R)}catch(e){}
  const sel=document.getElementById('room');sel.innerHTML=idx.rooms.map(x=>`<option value="${x.id}"${x.id===R?' selected':''}>${ROOMNAME(x.id)}（${x.n} 塊）</option>`).join('');
  sel.onchange=()=>{location.hash=sel.value;location.reload()};
@@ -157,8 +157,16 @@ const dims=i=>{const [a,b]=boxAt(i);return [0,1,2].map(k=>Math.round(b[k]-a[k]))
 const ctr=i=>{const a=bmin(i),b=bmax(i);return [(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]};
 const basePos=[],nor=[],pid=[],baseE=[];const pR=[],eR=[];
 const rectP=b=>[[b[0],b[1]],[b[3],b[1]],[b[3],b[4]],[b[0],b[4]]];
+// 真實網格（螺桿、煙斗）：模板頂點 × 仿射矩陣，逐面法向
+function meshTris(T,m,cb){const v=T.v,f=T.f,W=new Float32Array(v.length);
+ for(let i=0;i<v.length;i+=3){const x=v[i],y=v[i+1],z=v[i+2];for(let k=0;k<3;k++)W[i+k]=x*m[1+k]+y*m[4+k]+z*m[7+k]+m[10+k]}
+ for(let i=0;i<f.length;i+=3){const a=f[i]*3,b=f[i+1]*3,c=f[i+2]*3;
+  const ux=W[b]-W[a],uy=W[b+1]-W[a+1],uz=W[b+2]-W[a+2],vx=W[c]-W[a],vy=W[c+1]-W[a+1],vz=W[c+2]-W[a+2];
+  let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
+  cb(W[a],W[a+1],W[a+2],nx,ny,nz);cb(W[b],W[b+1],W[b+2],nx,ny,nz);cb(W[c],W[c+1],W[c+2],nx,ny,nz)}}
 PN.forEach((p,i)=>{const st=basePos.length/3,es=baseE.length/3;const cb=(x,y,z,a,b,c)=>{basePos.push(x,y,z);nor.push(a,b,c);pid.push(i)};
- if(p.poly){prism(p.poly,p.pz[0],p.pz[1],cb);edges(p.poly,p.pz[0],p.pz[1],baseE)}else for(const b of p.b){prism(rectP(b),b[2],b[5],cb);edges(rectP(b),b[2],b[5],baseE)}
+ if(p.m&&D.tpl&&D.tpl[p.m[0]])meshTris(D.tpl[p.m[0]],p.m,cb);
+ else if(p.poly){prism(p.poly,p.pz[0],p.pz[1],cb);edges(p.poly,p.pz[0],p.pz[1],baseE)}else for(const b of p.b){prism(rectP(b),b[2],b[5],cb);edges(rectP(b),b[2],b[5],baseE)}
  pR.push([st,basePos.length/3-st]);eR.push([es,baseE.length/3-es])});
 const B0=new Float32Array(basePos),E0=new Float32Array(baseE);
 const POS=new Float32Array(B0),EP=new Float32Array(E0);
@@ -403,7 +411,7 @@ function showInfo(light){if(sel<0){info.style.display='none';return}const p=PN[s
  document.getElementById('dimrow').style.display=SEL.size===1?'flex':'none';
  for(const [k,id] of [[0,'dx'],[1,'dy'],[2,'dz']]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=dm[k]}
  const sw=document.getElementById('swapB');if(sw){sw.textContent=SEL.size===2?'⇅ 兩塊互換':'⇅ 與下方互換';sw.style.display=(SEL.size===1||SEL.size===2)?'':'none'}
- infoT.innerHTML=`${p.name?'':''}${SEL.size>1?`<div style="color:#ffb86b;font-size:12px">已選 ${SEL.size} 塊，一起移動</div>`:''}<div><span class="c">${dcode(sel)||'（無編號）'}</span>　${p.size||''}</div><div style="color:#9aa;font-size:12px">${SN[p.s]}${p.name?'（'+p.name+'）':''}・<span style="color:#7bd0ff">底 ${Math.round(mn[2])}</span>　頂 ${Math.round(mx[2])}${moved(sel)?`　<span style="color:#ffb86b">移 ${o[0]},${o[1]},${o[2]}</span>`:''}${HOW[p.how]?`　<span style="color:#f6a">${HOW[p.how]}</span>`:''}${p.lift?`　<span style="color:#ffb86b">原本重疊，已上移 ${p.lift}</span>`:''}${/-(\d+)F$/.test(p.code)?`　<span style="color:#9fd">${p.code.match(/-(\d+)F$/)[1]}樓新增・沿用</span>`:''}</div>`;
+ infoT.innerHTML=`${p.name?'':''}${SEL.size>1?`<div style="color:#ffb86b;font-size:12px">已選 ${SEL.size} 塊，一起移動</div>`:''}<div><span class="c">${dcode(sel)||'（無編號）'}</span>　${p.size||''}</div><div style="color:#9aa;font-size:12px">${p.room?(/^[A-Z]$/.test(p.room)?p.room+' 房':p.room)+'・':''}${SN[p.s]}${p.name?'（'+p.name+'）':''}・<span style="color:#7bd0ff">底 ${Math.round(mn[2])}</span>　頂 ${Math.round(mx[2])}${moved(sel)?`　<span style="color:#ffb86b">移 ${o[0]},${o[1]},${o[2]}</span>`:''}${HOW[p.how]?`　<span style="color:#f6a">${HOW[p.how]}</span>`:''}${p.lift?`　<span style="color:#ffb86b">原本重疊，已上移 ${p.lift}</span>`:''}${/-(\d+)F$/.test(p.code)?`　<span style="color:#9fd">${p.code.match(/-(\d+)F$/)[1]}樓新增・沿用</span>`:''}</div>`;
  ed.style.display=mode==='edit'&&!lock[p.s]?'flex':'none';
  document.getElementById('unk').style.display=unk?'flex':'none';
  if(unk){const ne=document.getElementById('nm');if(document.activeElement!==ne)ne.value=names[sel]||''}
@@ -441,7 +449,7 @@ function doSearch(){const s=norm(q.value);if(!s){match=null;res.style.display='n
  for(const p of PN){const k=p.key;let ok;if(/^[A-Z]{1,3}\d?-/.test(s)&&!s.includes(' ')){const c=p.code.toUpperCase().replace('？','');ok=c===s||c.startsWith(s+'-')||c.startsWith(s+'T')}else ok=k.includes(s)||terms.every(t=>k.includes(t));if(ok){m.add(p.id);list.push(p)}}
  if(!list.length&&/^[A-Z]{1,3}\d?-/.test(s))for(const p of PN)if(p.code.toUpperCase().startsWith(s)){m.add(p.id);list.push(p)}
  match=m;cnt.textContent=`找到 ${m.size} 塊`;
- res.innerHTML=list.slice(0,80).map(p=>`<div data-i="${p.id}"><b>${dcode(p.id)||'—'}</b>${boxed.has(p.id)?' <span style="color:#ffb86b">📦收納箱</span>':''}${p.how==='guess'?' <span style="color:#f6a">推測</span>':p.how==='orphan'?' <span style="color:#f66">沒畫板</span>':''}　${p.size}　<span style="color:#9aa">${SN[p.s]}</span></div>`).join('')+(list.length>80?`<div style="color:#9aa">…還有 ${list.length-80} 塊</div>`:'');
+ res.innerHTML=list.slice(0,80).map(p=>`<div data-i="${p.id}">${p.room?`<span style="color:#9cf">${p.room}</span> `:''}<b>${dcode(p.id)||'—'}</b>${boxed.has(p.id)?' <span style="color:#ffb86b">📦收納箱</span>':''}${p.how==='guess'?' <span style="color:#f6a">推測</span>':p.how==='orphan'?' <span style="color:#f66">沒畫板</span>':''}　${p.size}　<span style="color:#9aa">${SN[p.s]}</span></div>`).join('')+(list.length>80?`<div style="color:#9aa">…還有 ${list.length-80} 塊</div>`:'');
  res.style.display=list.length?'block':'none';recolor()}
 q.addEventListener('input',doSearch);
 document.getElementById('clr').onclick=()=>{q.value='';doSearch()};

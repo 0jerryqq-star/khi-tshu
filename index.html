@@ -318,11 +318,11 @@ function draw(){
   lx.globalAlpha=1}}
 }
 // ---------- 方位方塊（上下左右前後）----------
-const cube=document.createElement('canvas');cube.id='cube';cube.style.cssText='position:fixed;right:8px;bottom:62px;width:96px;height:96px;z-index:2;touch-action:none;cursor:pointer';document.body.appendChild(cube);
+const cube=document.createElement('canvas');cube.id='cube';const CS=innerWidth<600?70:88;cube.style.cssText=`position:fixed;right:6px;top:50%;margin-top:${-CS/2}px;width:${CS}px;height:${CS}px;z-index:1;touch-action:none;cursor:pointer`;document.body.appendChild(cube);
 const cx_=cube.getContext('2d');let cubeFaces=[];
 // 世界座標：X 右(+) 左(-)，Y 後(+) 前(-)，Z 上(+) 下(-)
 const FACES=[{n:[0,0,1],t:'上',v:{pitch:1.55}},{n:[0,0,-1],t:'下',v:{pitch:-1.45}},{n:[1,0,0],t:'右',v:{yaw:0,pitch:0.05}},{n:[-1,0,0],t:'左',v:{yaw:Math.PI,pitch:0.05}},{n:[0,-1,0],t:'前',v:{yaw:-Math.PI/2,pitch:0.05}},{n:[0,1,0],t:'後',v:{yaw:Math.PI/2,pitch:0.05}}];
-function drawCube(){const dpr=Math.min(devicePixelRatio||1,2),S=96*dpr;if(cube.width!==S){cube.width=S;cube.height=S}
+function drawCube(){const dpr=Math.min(devicePixelRatio||1,2),S=CS*dpr;if(cube.width!==S){cube.width=S;cube.height=S}
  const {yaw,pitch}=cam;const ex=Math.cos(pitch)*Math.cos(yaw),ey=Math.cos(pitch)*Math.sin(yaw),ez=Math.sin(pitch);
  // camera basis
  let rx=-ey,ry=ex,rz=0;const rl=Math.hypot(rx,ry)||1;rx/=rl;ry/=rl;const ux=ey*rz-ez*ry,uy=ez*rx-ex*rz,uz=ex*ry-ey*rx;

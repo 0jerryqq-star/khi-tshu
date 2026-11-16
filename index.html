@@ -106,7 +106,7 @@ const SHEET={wall:['牆板','#8fb3d9'],k:['K板','#3fc9c0'],beam:['梁板','#7bd
 const SN={wall:'牆板',k:'K板',beam:'梁板',deck:'頂板',dm:'吊模',fence:'圍欄',st:'樓梯',acc:'加固件'};
 const HOW={bim:'',direct:'',leader:'',near:'標籤在板外配對',stack:'疊放第二塊',ext:'延伸板',guess:'編號推測',orphan:'只有標籤沒畫板',none:'圖上無編號'};
 const STRUCT_COL='#7a7f88';
-const show={wall:1,k:1,beam:1,deck:1,dm:1,fence:1,st:1,acc:0,struct:0,labels:1};
+const show={wall:1,k:1,beam:1,deck:1,dm:1,fence:1,st:1,acc:0,struct:0,labels:1,edges:1};try{if(localStorage.getItem('khi_edges')==='0')show.edges=0}catch(e){}
 const lock={wall:0,k:0,beam:0,deck:0,dm:0,fence:0,st:0,acc:0};
 let gz=null,gzHover=-1,solid=true,seamOn=false;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
 const cv=document.getElementById('c'),gl=cv.getContext('webgl',{antialias:true});
@@ -295,14 +295,14 @@ function draw(){
  gl.useProgram(P);gl.uniformMatrix4fv(u(P,'m'),false,M);gl.uniform1f(u(P,'clipz'),clipz);
  if(cam.pitch>0){gl.uniform1f(u(P,'useU'),1);gl.uniform4f(u(P,'uc'),.33,.35,.38,1);attr(P,'a',B.fpos,3);attr(P,'n',B.fnor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,fpos.length/3)}
  gl.uniform1f(u(P,'useU'),0);attr(P,'a',B.pos,3);attr(P,'n',B.nor,3);attr(P,'c',B.col,4);drawRuns(pR,gl.TRIANGLES,visP);offA(P,'c');
- gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform1f(u(PE,'clipz'),clipz);gl.uniform4f(u(PE,'uc'),.05,.06,.07,.7);attr(PE,'a',B.pe,3);drawRuns(eR,gl.LINES,visP);
+ gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform1f(u(PE,'clipz'),clipz);gl.uniform4f(u(PE,'uc'),.05,.06,.07,.7);attr(PE,'a',B.pe,3);if(show.edges)drawRuns(eR,gl.LINES,visP);
  if(seamOn){gl.uniform4f(u(PE,'uc'),.2,1,1,1);attr(PE,'a',SB.good,3);gl.drawArrays(gl.LINES,0,SB.ng);gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.15,.15,1);attr(PE,'a',SB.bad,3);gl.drawArrays(gl.LINES,0,SB.nb);gl.enable(gl.DEPTH_TEST);attr(PE,'a',B.pe,3)}
  if(SEL.size){gl.disable(gl.DEPTH_TEST);gl.uniform4f(u(PE,'uc'),1,.95,.4,1);for(const i of SEL)if(show[PN[i].s])gl.drawArrays(gl.LINES,eR[i][0],eR[i][1]);gl.enable(gl.DEPTH_TEST)}
  if(Object.keys(REF.geo).length){gl.useProgram(P);gl.uniformMatrix4fv(u(P,'m'),false,M);gl.uniform1f(u(P,'clipz'),clipz);gl.uniform1f(u(P,'useU'),1);offA(P,'c');
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
   for(const s in REF.geo){if(!show[s])continue;const g=REF.geo[s],c=hex(SHEET[s][1]);gl.uniform4f(u(P,'uc'),c[0]*.8+.1,c[1]*.8+.1,c[2]*.8+.1,.22);attr(P,'a',g.pb,3);attr(P,'n',g.nb,3);gl.drawArrays(gl.TRIANGLES,0,g.n)}
   gl.useProgram(PE);gl.uniformMatrix4fv(u(PE,'m'),false,M);gl.uniform4f(u(PE,'uc'),.75,.8,.9,.25);
-  for(const s in REF.geo){if(!show[s])continue;const g=REF.geo[s];attr(PE,'a',g.eb,3);gl.drawArrays(gl.LINES,0,g.en)}
+  if(show.edges)for(const s in REF.geo){if(!show[s])continue;const g=REF.geo[s];attr(PE,'a',g.eb,3);gl.drawArrays(gl.LINES,0,g.en)}
   gl.depthMask(true);gl.disable(gl.BLEND)}
  if(show.struct){gl.useProgram(P);gl.uniform1f(u(P,'useU'),1);const c=hex(STRUCT_COL);gl.uniform4f(u(P,'uc'),c[0],c[1],c[2],.35);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);attr(P,'a',B.spos,3);attr(P,'n',B.snor,3);offA(P,'c');gl.drawArrays(gl.TRIANGLES,0,spos.length/3);gl.depthMask(true);gl.disable(gl.BLEND)}
@@ -476,7 +476,7 @@ function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='fu
   if(mode==='edit'){const l=document.createElement('div');l.className='t lk'+(lock[k]?' warn':'');l.textContent=lock[k]?'🔒':'🔓';l.title='上鎖';
    l.onclick=()=>{lock[k]=!lock[k];if(lock[k]&&sel>=0&&PN[sel].s===k)select(-1);toast(SHEET[k][0]+(lock[k]?' 已上鎖，不能選、不能動':' 已解鎖'));refreshBar();recolor();autosave()};g.appendChild(l)}
   bar.appendChild(g)}
- for(const [k,t] of [['struct',`<span class="sw" style="background:${STRUCT_COL}"></span>混凝土`],['labels','🏷️ 編號']]){const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=t;b.onclick=()=>{show[k]=!show[k];refreshBar();seamsLater();req()};bar.appendChild(b)}
+ for(const [k,t] of [['struct',`<span class="sw" style="background:${STRUCT_COL}"></span>混凝土`],['labels','🏷️ 編號'],['edges','✏️ 黑邊']]){const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=t;b.onclick=()=>{show[k]=!show[k];if(k==='edges')try{localStorage.setItem('khi_edges',show.edges?'1':'0')}catch(e){};refreshBar();seamsLater();req()};bar.appendChild(b)}
  const se=document.createElement('div');se.style.display='none';se.className='t'+(seamOn?' on':' off');se.innerHTML=`✨ 接縫 <span id="seamInfo" style="font-size:11px;color:#aee">${seamOn?`貼合 ${seamStat.good} 處${seamStat.bad?`・重疊 ${seamStat.bad} 處`:''}`:''}</span>`;
  se.onclick=()=>{seamOn=!seamOn;if(seamOn)computeSeams();refreshBar();req()};bar.appendChild(se);
  const cw=document.createElement('div');cw.className='t';cw.innerHTML='切掉上方 <input id="clip" type="range" min="200" max="3500" step="50" value="'+(clipz>=1e9?3500:clipz)+'" style="width:110px"><span id="clipv">'+(clipz>=1e9?'全顯示':clipz)+'</span>';

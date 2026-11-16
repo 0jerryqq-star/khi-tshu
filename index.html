@@ -75,7 +75,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
   </div>
  </div>
 </div>
-<div id="help"><span id="ttl"></span><br><span style="color:#f6a">■</span> 粉紅＝編號推測　<span style="color:#f66">■</span> 紅點＝只有標籤沒畫板<br>單指拖曳＝旋轉　雙指＝縮放／平移　點一下＝選取<br><span style="color:#3ff">━</span> 青線＝貼合　<span style="color:#f44">━</span> 紅線＝重疊</div>
+<div id="help"><span id="ttl"></span><br><span style="color:#f6a">■</span> 粉紅＝編號推測　<span style="color:#f66">■</span> 紅點＝只有標籤沒畫板<br>單指拖曳＝旋轉　雙指＝縮放／平移　點一下＝選取</div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="toast"></div>
 <input type="file" id="file" accept=".json,application/json" style="display:none">
@@ -108,7 +108,7 @@ const HOW={bim:'',direct:'',leader:'',near:'標籤在板外配對',stack:'疊放
 const STRUCT_COL='#7a7f88';
 const show={wall:1,k:1,beam:1,deck:1,dm:1,st:1,acc:0,struct:0,labels:1};
 const lock={wall:0,k:0,beam:0,deck:0,dm:0,st:0,acc:0};
-let gz=null,gzHover=-1,solid=true,seamOn=true;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
+let gz=null,gzHover=-1,solid=true,seamOn=false;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
 const cv=document.getElementById('c'),gl=cv.getContext('webgl',{antialias:true});
 const lc=document.getElementById('lab'),lx=lc.getContext('2d');
 const toastEl=document.getElementById('toast');let tt=0;function toast(s){toastEl.textContent=s;toastEl.style.display='block';clearTimeout(tt);tt=setTimeout(()=>toastEl.style.display='none',1600)}
@@ -466,7 +466,7 @@ function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='fu
    l.onclick=()=>{lock[k]=!lock[k];if(lock[k]&&sel>=0&&PN[sel].s===k)select(-1);toast(SHEET[k][0]+(lock[k]?' 已上鎖，不能選、不能動':' 已解鎖'));refreshBar();recolor();autosave()};g.appendChild(l)}
   bar.appendChild(g)}
  for(const [k,t] of [['struct',`<span class="sw" style="background:${STRUCT_COL}"></span>混凝土`],['labels','🏷️ 編號']]){const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=t;b.onclick=()=>{show[k]=!show[k];refreshBar();seamsLater();req()};bar.appendChild(b)}
- const se=document.createElement('div');se.className='t'+(seamOn?' on':' off');se.innerHTML=`✨ 接縫 <span id="seamInfo" style="font-size:11px;color:#aee">${seamOn?`貼合 ${seamStat.good} 處${seamStat.bad?`・重疊 ${seamStat.bad} 處`:''}`:''}</span>`;
+ const se=document.createElement('div');se.style.display='none';se.className='t'+(seamOn?' on':' off');se.innerHTML=`✨ 接縫 <span id="seamInfo" style="font-size:11px;color:#aee">${seamOn?`貼合 ${seamStat.good} 處${seamStat.bad?`・重疊 ${seamStat.bad} 處`:''}`:''}</span>`;
  se.onclick=()=>{seamOn=!seamOn;if(seamOn)computeSeams();refreshBar();req()};bar.appendChild(se);
  const cw=document.createElement('div');cw.className='t';cw.innerHTML='切掉上方 <input id="clip" type="range" min="200" max="3500" step="50" value="'+(clipz>=1e9?3500:clipz)+'" style="width:110px"><span id="clipv">'+(clipz>=1e9?'全顯示':clipz)+'</span>';
  cw.addEventListener('pointerdown',e=>e.stopPropagation());const cl=cw.querySelector('input');cl.oninput=()=>{const v=+cl.value;clipz=v>=3500?1e9:v;cw.querySelector('#clipv').textContent=v>=3500?'全顯示':v;req()};bar.appendChild(cw);
@@ -528,7 +528,7 @@ document.getElementById('file').addEventListener('change',async e=>{const f=e.ta
  const S=saves();s.name=s.name||f.name;S.unshift({room:ROOM,moves:s.moves||{},dims:s.dims||{},names:s.names||{},box:s.box||[],lock:s.lock||{},time:s.time||'',name:s.name});lsSet(LSKEY+'_saves',S);restore(s);autosave();toast('已匯入：'+s.name);modal.style.display='none'}catch(err){toast('檔案讀不出來')}e.target.value=''});
 // ---------- start ----------
 const cur=lsGet(LSKEY+'_current');if(cur&&((cur.box||[]).length||Object.keys(cur.moves||{}).length||Object.keys(cur.dims||{}).length||Object.keys(cur.names||{}).length)){restore(cur);toast('已接續上次的調整')}
-refreshBar();applyFold();recolor();computeSeams();
+refreshBar();applyFold();recolor();
 document.getElementById('refB').onclick=openRefs;{const L=loadRefSel();if(L.length)buildRefs(L)}
 }
 </script></body></html>

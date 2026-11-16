@@ -102,12 +102,12 @@ function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.get
 })();
 function start(D){
 const ROOM=D.room, LSKEY='khi_bim_'+ROOM;
-const SHEET={wall:['牆板','#8fb3d9'],k:['K板','#ff9a3c'],beam:['梁板','#7bd389'],deck:['頂板','#e8d36a'],dm:['吊模','#c58cff'],st:['樓梯','#ff7aa8'],acc:['加固件','#a9adb3']};
-const SN={wall:'牆板',k:'K板',beam:'梁板',deck:'頂板',dm:'吊模',st:'樓梯',acc:'加固件'};
+const SHEET={wall:['牆板','#8fb3d9'],k:['K板','#3fc9c0'],beam:['梁板','#7bd389'],deck:['頂板','#e8d36a'],dm:['吊模','#c58cff'],fence:['圍欄','#e07a5f'],st:['樓梯','#ff7aa8'],acc:['加固件','#ff9a3c']};
+const SN={wall:'牆板',k:'K板',beam:'梁板',deck:'頂板',dm:'吊模',fence:'圍欄',st:'樓梯',acc:'加固件'};
 const HOW={bim:'',direct:'',leader:'',near:'標籤在板外配對',stack:'疊放第二塊',ext:'延伸板',guess:'編號推測',orphan:'只有標籤沒畫板',none:'圖上無編號'};
 const STRUCT_COL='#7a7f88';
-const show={wall:1,k:1,beam:1,deck:1,dm:1,st:1,acc:0,struct:0,labels:1};
-const lock={wall:0,k:0,beam:0,deck:0,dm:0,st:0,acc:0};
+const show={wall:1,k:1,beam:1,deck:1,dm:1,fence:1,st:1,acc:0,struct:0,labels:1};
+const lock={wall:0,k:0,beam:0,deck:0,dm:0,fence:0,st:0,acc:0};
 let gz=null,gzHover=-1,solid=true,seamOn=false;const boxed=new Set();let mode='view',snapOn=true,axis=2,sel=-1,match=null,clipz=1e9,multi=false;const SEL=new Set();
 const cv=document.getElementById('c'),gl=cv.getContext('webgl',{antialias:true});
 const lc=document.getElementById('lab'),lx=lc.getContext('2d');
@@ -459,7 +459,7 @@ q.addEventListener('focus',()=>{if(match&&res.innerHTML)res.style.display='block
 // ---------- bars ----------
 const bar=document.getElementById('bar'),ebar=document.getElementById('ebar');
 function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='function')applyFold()},0);
- for(const k of ['wall','k','beam','deck','dm','st','acc']){if(!PN.some(p=>p.s===k))continue;const g=document.createElement('div');g.className='lay';
+ for(const k of ['wall','k','beam','deck','dm','fence','st','acc']){if(!PN.some(p=>p.s===k))continue;const g=document.createElement('div');g.className='lay';
   const b=document.createElement('div');b.className='t'+(show[k]?'':' off');b.innerHTML=`<span class="sw" style="background:${SHEET[k][1]}"></span>${SHEET[k][0]}`;
   b.onclick=()=>{show[k]=!show[k];if(!show[k]&&sel>=0&&PN[sel].s===k)select(-1);refreshBar();seamsLater();req()};g.appendChild(b);
   if(mode==='edit'){const l=document.createElement('div');l.className='t lk'+(lock[k]?' warn':'');l.textContent=lock[k]?'🔒':'🔓';l.title='上鎖';

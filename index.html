@@ -242,7 +242,7 @@ function offA(p,name){const l=gl.getAttribLocation(p,name);if(l>=0)gl.disableVer
 // ---------- colors ----------
 function moved(i){const o=off[i],s=scl[i];return o[0]||o[1]||o[2]||s[0]!==1||s[1]!==1||s[2]!==1||names[i]}
 function recolor(){for(let i=0;i<PN.length;i++){const p=PN[i];let c=hex(SHEET[p.s][1]);
-  if(p.how==='guess')c=[.95,.55,.85];if(p.how==='orphan')c=[1,.25,.25];if(p.how==='none')c=c.map(v=>v*.6);
+  if(p.s==='acc'&&/螺杆|拉片|螺母/.test(p.name||''))c=[.62,.64,.68];if(p.how==='guess')c=[.95,.55,.85];if(p.how==='orphan')c=[1,.25,.25];if(p.how==='none')c=c.map(v=>v*.6);
   if(mode==='edit'&&lock[p.s])c=c.map(v=>v*.55+.08);
   if(match)c=match.has(i)?[1,.85,.1]:c.map(v=>v*.35+.12);
   if(SEL.has(i))c=i===sel?[1,.32,.32]:[1,.5,.35];

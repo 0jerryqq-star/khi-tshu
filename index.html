@@ -157,6 +157,17 @@ const dims=i=>{const [a,b]=boxAt(i);return [0,1,2].map(k=>Math.round(b[k]-a[k]))
 const ctr=i=>{const a=bmin(i),b=bmax(i);return [(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]};
 const basePos=[],nor=[],pid=[],baseE=[];const pR=[],eR=[];
 const rectP=b=>[[b[0],b[1]],[b[3],b[1]],[b[3],b[4]],[b[0],b[4]]];
+// 真實網格的黑邊：相鄰兩面夾角 > 25° 或開放邊，才畫線（每個模板算一次）
+function featureEdges(T){if(T._fe)return T._fe;const v=T.v,f=T.f,key=i=>Math.round(v[i*3]*10)+','+Math.round(v[i*3+1]*10)+','+Math.round(v[i*3+2]*10);
+ const E=new Map();for(let i=0;i<f.length;i+=3){const a=f[i],b=f[i+1],c=f[i+2];
+  const ux=v[b*3]-v[a*3],uy=v[b*3+1]-v[a*3+1],uz=v[b*3+2]-v[a*3+2],wx=v[c*3]-v[a*3],wy=v[c*3+1]-v[a*3+1],wz=v[c*3+2]-v[a*3+2];
+  let nx=uy*wz-uz*wy,ny=uz*wx-ux*wz,nz=ux*wy-uy*wx;const l=Math.hypot(nx,ny,nz);if(l<1e-9)continue;nx/=l;ny/=l;nz/=l;
+  for(const [p,q] of [[a,b],[b,c],[c,a]]){const kp=key(p),kq=key(q);const k=kp<kq?kp+'|'+kq:kq+'|'+kp;let e=E.get(k);if(!e){e={p,q,n:[]};E.set(k,e)}e.n.push([nx,ny,nz])}}
+ const out=[];const cos=Math.cos(25*Math.PI/180);
+ for(const e of E.values()){let feat=e.n.length===1;if(!feat){const a=e.n[0];for(let k=1;k<e.n.length;k++){const b=e.n[k];if(Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2])<cos){feat=true;break}}}
+  if(feat)out.push(e.p,e.q)}
+ return T._fe=out}
+function meshEdges(T,m,arr){const v=T.v,fe=featureEdges(T);for(const i of fe){const x=v[i*3],y=v[i*3+1],z=v[i*3+2];for(let k=0;k<3;k++)arr.push(x*m[1+k]+y*m[4+k]+z*m[7+k]+m[10+k])}}
 // 真實網格（螺桿、煙斗）：模板頂點 × 仿射矩陣，逐面法向
 function meshTris(T,m,cb){const v=T.v,f=T.f,W=new Float32Array(v.length);
  for(let i=0;i<v.length;i+=3){const x=v[i],y=v[i+1],z=v[i+2];for(let k=0;k<3;k++)W[i+k]=x*m[1+k]+y*m[4+k]+z*m[7+k]+m[10+k]}
@@ -165,7 +176,7 @@ function meshTris(T,m,cb){const v=T.v,f=T.f,W=new Float32Array(v.length);
   let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
   cb(W[a],W[a+1],W[a+2],nx,ny,nz);cb(W[b],W[b+1],W[b+2],nx,ny,nz);cb(W[c],W[c+1],W[c+2],nx,ny,nz)}}
 PN.forEach((p,i)=>{const st=basePos.length/3,es=baseE.length/3;const cb=(x,y,z,a,b,c)=>{basePos.push(x,y,z);nor.push(a,b,c);pid.push(i)};
- if(p.m&&D.tpl&&D.tpl[p.m[0]])meshTris(D.tpl[p.m[0]],p.m,cb);
+ if(p.m&&D.tpl&&D.tpl[p.m[0]]){meshTris(D.tpl[p.m[0]],p.m,cb);meshEdges(D.tpl[p.m[0]],p.m,baseE)}
  else if(p.poly){prism(p.poly,p.pz[0],p.pz[1],cb);edges(p.poly,p.pz[0],p.pz[1],baseE)}else for(const b of p.b){prism(rectP(b),b[2],b[5],cb);edges(rectP(b),b[2],b[5],baseE)}
  pR.push([st,basePos.length/3-st]);eR.push([es,baseE.length/3-es])});
 const B0=new Float32Array(basePos),E0=new Float32Array(baseE);

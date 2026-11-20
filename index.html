@@ -46,6 +46,8 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
  <div style="font-size:64px">🧩</div><div style="font-size:22px;font-weight:700">khi-tshu 蓋厝</div>
  <input id="pw" type="password" inputmode="numeric" placeholder="請輸入密碼" style="font-size:20px;padding:10px;border-radius:10px;border:1px solid #556;background:#0f1114;color:#fff;width:200px;text-align:center">
  <div class="t on" id="pwb" style="font-size:17px;padding:10px 26px">進入</div><div id="pwm" style="color:#f77;height:20px"></div></div>
+<div id="pick" style="position:fixed;inset:0;z-index:19;background:#16191e;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:20px">
+ <div style="font-size:56px">🧩</div><div style="font-size:21px;font-weight:700">要看哪一張圖？</div><div id="plist" style="display:flex;flex-direction:column;gap:12px;width:min(320px,90vw)"></div></div>
 <div id="loading" style="position:fixed;inset:0;z-index:15;background:#1e2228;display:none;align-items:center;justify-content:center;font-size:18px;color:#aab">讀取中…</div>
 <canvas id="c"></canvas><canvas id="lab"></canvas>
 <div id="top">
@@ -88,20 +90,27 @@ function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.get
 (async()=>{
  await gate();
  const load=document.getElementById('loading');load.style.display='flex';
- let idx;try{idx=await (await fetch('rooms/index.json')).json()}catch(e){load.textContent='讀不到房間清單，請連網後再開一次';return}
- let R=decodeURIComponent(location.hash.slice(1));let last=null;try{last=localStorage.getItem('khi_room')}catch(e){}
+ const PROJ=[{id:'rooms',t:'TW0341 C棟・13F',d:'原本這張'},{id:'b20400',t:'TW0343・3F',d:'新的圖'}];
+ let P=null;try{P=sessionStorage.getItem('khi_proj')}catch(e){}
+ if(!PROJ.some(p=>p.id===P)){load.style.display='none';P=await new Promise(ok=>{const pk=document.getElementById('pick');pk.style.display='flex';
+  document.getElementById('plist').innerHTML=PROJ.map(p=>`<div class="t on" data-p="${p.id}" style="font-size:19px;padding:16px;text-align:center;display:block">${p.t}<br><small style="opacity:.75">${p.d}</small></div>`).join('');
+  pk.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk.style.display='none';ok(b.dataset.p)})});
+  try{sessionStorage.setItem('khi_proj',P)}catch(e){} if(location.hash){history.replaceState(null,'',location.pathname)} load.style.display='flex'}
+ window.DIR=P+'/';window.LSPRE=P==='rooms'?'khi_bim_':'khi_bim_'+P+'_';
+ let idx;try{idx=await (await fetch(DIR+'index.json')).json()}catch(e){load.textContent='讀不到房間清單，請連網後再開一次';return}
+ let R=decodeURIComponent(location.hash.slice(1));let last=null;try{last=localStorage.getItem('khi_room_'+P)}catch(e){}
  if(!idx.rooms.some(x=>x.id===R))R=idx.rooms.some(x=>x.id==='ALL')?'ALL':(idx.rooms.some(x=>x.id===last)?last:idx.rooms[0].id);
- try{localStorage.setItem('khi_room',R)}catch(e){}
+ try{localStorage.setItem('khi_room_'+P,R)}catch(e){}
  const sel=document.getElementById('room');sel.innerHTML=idx.rooms.map(x=>`<option value="${x.id}"${x.id===R?' selected':''}>${ROOMNAME(x.id)}（${x.n} 塊）</option>`).join('');
  sel.onchange=()=>{location.hash=sel.value;location.reload()};
- let D;try{D=await (await fetch('rooms/'+encodeURIComponent(R)+'.json')).json()}catch(e){load.textContent='讀不到這間房的資料，請連網後再開一次';return}
+ let D;try{D=await (await fetch(DIR+encodeURIComponent(R)+'.json')).json()}catch(e){load.textContent='讀不到這間房的資料，請連網後再開一次';return}
  window.KHI={idx,R};
  load.style.display='none';document.getElementById('ttl').textContent=idx.floor+'・'+ROOMNAME(R);
  start(D);
  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 function start(D){
-const ROOM=D.room, LSKEY='khi_bim_'+ROOM;
+const ROOM=D.room, LSKEY=LSPRE+ROOM;
 const SHEET={wall:['牆板','#8fb3d9'],k:['K板','#3fc9c0'],beam:['梁板','#7bd389'],deck:['頂板','#e8d36a'],dm:['吊模','#c58cff'],fence:['圍欄','#e07a5f'],st:['樓梯','#ff7aa8'],acc:['加固件','#ff9a3c']};
 const SN={wall:'牆板',k:'K板',beam:'梁板',deck:'頂板',dm:'吊模',fence:'圍欄',st:'樓梯',acc:'加固件'};
 const HOW={bim:'',direct:'',leader:'',near:'標籤在板外配對',stack:'疊放第二塊',ext:'延伸板',guess:'編號推測',orphan:'只有標籤沒畫板',none:'圖上無編號'};
@@ -222,7 +231,7 @@ function loadRefSel(){try{return JSON.parse(localStorage.getItem(refKey())||'[]'
 async function buildRefs(list){REF.rooms=list;for(const s in REF.geo){gl.deleteBuffer(REF.geo[s].pb);gl.deleteBuffer(REF.geo[s].nb);gl.deleteBuffer(REF.geo[s].eb)}REF.geo={};
  const K=window.KHI;if(!K)return;const me=K.idx.rooms.find(x=>x.id===ROOM);if(!me){req();return}
  const acc={};
- for(const id of list){const info=K.idx.rooms.find(x=>x.id===id);if(!info)continue;let d;try{d=await (await fetch('rooms/'+encodeURIComponent(id)+'.json')).json()}catch(e){toast('讀不到 '+id);continue}
+ for(const id of list){const info=K.idx.rooms.find(x=>x.id===id);if(!info)continue;let d;try{d=await (await fetch(DIR+encodeURIComponent(id)+'.json')).json()}catch(e){toast('讀不到 '+id);continue}
   const dx=info.ox-me.ox,dy=info.oy-me.oy;
   for(const p of d.panels){if(p.how==='orphan')continue;const a=acc[p.s]||(acc[p.s]={pos:[],nor:[],e:[]});normB(p);
    const cb=(x,y,z,nx,ny,nz)=>{a.pos.push(x+dx,y+dy,z);a.nor.push(nx,ny,nz)};const sh=(arr)=>{};
@@ -481,7 +490,7 @@ function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='fu
  se.onclick=()=>{seamOn=!seamOn;if(seamOn)computeSeams();refreshBar();req()};bar.appendChild(se);
  const cw=document.createElement('div');cw.className='t';cw.innerHTML='切掉上方 <input id="clip" type="range" min="200" max="3500" step="50" value="'+(clipz>=1e9?3500:clipz)+'" style="width:110px"><span id="clipv">'+(clipz>=1e9?'全顯示':clipz)+'</span>';
  cw.addEventListener('pointerdown',e=>e.stopPropagation());const cl=cw.querySelector('input');cl.oninput=()=>{const v=+cl.value;clipz=v>=3500?1e9:v;cw.querySelector('#clipv').textContent=v>=3500?'全顯示':v;req()};bar.appendChild(cw);
- for(const [t,f] of [['↺ 視角',()=>{cam=C0();req()}],['⬇ 俯視',()=>{cam.pitch=1.55;cam.yaw=-Math.PI/2;req()}],['⬆ 仰看',()=>{cam.pitch=-1.2;req()}]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;bar.appendChild(b)}
+ for(const [t,f] of [['🔄 換圖',()=>{try{sessionStorage.removeItem('khi_proj')}catch(e){};history.replaceState(null,'',location.pathname);location.reload()}],['↺ 視角',()=>{cam=C0();req()}],['⬇ 俯視',()=>{cam.pitch=1.55;cam.yaw=-Math.PI/2;req()}],['⬆ 仰看',()=>{cam.pitch=-1.2;req()}]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;bar.appendChild(b)}
  ebar.style.display=mode==='edit'?'flex':'none';ebar.innerHTML='';
  if(mode==='edit'){const sn=document.createElement('div');sn.className='t'+(snapOn?' on':'');sn.textContent='🧲 吸附'+(snapOn?'開':'關');sn.onclick=()=>{snapOn=!snapOn;refreshBar()};ebar.appendChild(sn);
   const so=document.createElement('div');so.className='t'+(solid?' on':'');so.textContent='🧱 實體'+(solid?'開':'關');so.onclick=()=>{solid=!solid;toast(solid?'實體開：板子互相不能穿過':'實體關：板子可以穿過去');refreshBar()};ebar.appendChild(so);

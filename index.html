@@ -90,7 +90,7 @@ function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.get
 (async()=>{
  await gate();
  const load=document.getElementById('loading');load.style.display='flex';
- const PROJ=[{id:'rooms',t:'TW0341 C棟・13F',d:'原本這張'},{id:'b20400',t:'TW0343・3F',d:'新的圖'}];
+ const PROJ=[{id:'rooms',t:'大里光正',d:'TW0341 C棟・13F'},{id:'b20400',t:'彰化和美',d:'TW0343・3F'}];
  let P=null;try{P=sessionStorage.getItem('khi_proj')}catch(e){}
  if(!PROJ.some(p=>p.id===P)){load.style.display='none';P=await new Promise(ok=>{const pk=document.getElementById('pick');pk.style.display='flex';
   document.getElementById('plist').innerHTML=PROJ.map(p=>`<div class="t on" data-p="${p.id}" style="font-size:19px;padding:16px;text-align:center;display:block">${p.t}<br><small style="opacity:.75">${p.d}</small></div>`).join('');
@@ -105,7 +105,7 @@ function gate(){return new Promise(ok=>{let pass=false;try{pass=localStorage.get
  sel.onchange=()=>{location.hash=sel.value;location.reload()};
  let D;try{D=await (await fetch(DIR+encodeURIComponent(R)+'.json')).json()}catch(e){load.textContent='讀不到這間房的資料，請連網後再開一次';return}
  window.KHI={idx,R};
- load.style.display='none';document.getElementById('ttl').textContent=idx.floor+'・'+ROOMNAME(R);
+ load.style.display='none';document.getElementById('ttl').textContent=PROJ.find(p=>p.id===P).t+'・'+idx.floor+'・'+ROOMNAME(R);
  start(D);
  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();

@@ -55,7 +55,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
   <div class="t" id="fold" title="收合">☰</div>
   <select id="room" style="display:none;font-size:16px;padding:7px 8px;border-radius:8px;background:#2c323b;color:#fff;border:1px solid #6b93cf;max-width:170px"></select>
   <div class="t" id="refB" style="display:none">🗂 參照</div>
-  <div class="t on" id="mView">👁 預覽</div><div class="t" id="mEdit">✏️ 編輯</div>
+  <div class="t on" id="mView" style="display:none">👁 預覽</div><div class="t" id="mEdit" style="display:none">✏️ 編輯</div>
   <input id="q" placeholder="搜尋編號或尺寸，例如 U-W1-21、FWR 2440" autocomplete="off"><span id="cnt"></span><div class="t" id="clr">✕</div>
  </div>
  <div id="res"></div>
@@ -498,7 +498,7 @@ function refreshBar(){bar.innerHTML='';setTimeout(()=>{if(typeof applyFold==='fu
   const bx=document.createElement('div');bx.className='t';bx.textContent=`📦 收納箱 ${boxed.size}`;bx.onclick=openBox;ebar.appendChild(bx);
   for(const [t,f] of [['↶ 復原',doUndo],['💾 存檔／讀檔',openSaves]]){const b=document.createElement('div');b.className='t';b.textContent=t;b.onclick=f;ebar.appendChild(b)}
   const n=document.createElement('span');n.style.cssText='font-size:12px;color:#ffb86b';n.textContent=`已調整 ${PN.filter(p=>moved(p.id)).length} 塊`;ebar.appendChild(n)}}
-let folded=innerWidth<600;try{const f=localStorage.getItem('khi_fold');if(f!==null)folded=f==='1'}catch(e){}
+let folded=false;
 function applyFold(){bar.style.display=folded?'none':'flex';ebar.style.display=(!folded&&mode==='edit')?'flex':'none';document.getElementById('fold').classList.toggle('on',folded);document.getElementById('fold').textContent=folded?'☰ 展開':'☰'}
 document.getElementById('fold').onclick=()=>{folded=!folded;try{localStorage.setItem('khi_fold',folded?'1':'0')}catch(e){}applyFold()};
 function setMode(m){mode=m;document.getElementById('mView').classList.toggle('on',m==='view');document.getElementById('mEdit').classList.toggle('on',m==='edit');refreshBar();showInfo();recolor()}

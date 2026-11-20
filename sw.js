@@ -1,5 +1,5 @@
 // khi-tshu 蓋厝：離線快取。改版時把版本號加 1，手機下次開啟就會更新。
-const VERSION = 'khi-v29';
+const VERSION = 'khi-v30';
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./rooms/index.json", "./b20400/index.json", "./b20400/ALL.json", "./rooms/ALL.json", "./rooms/A.json", "./rooms/B.json", "./rooms/C.json", "./rooms/D.json", "./rooms/E.json", "./rooms/F.json", "./rooms/G.json", "./rooms/H.json", "./rooms/J.json", "./rooms/K.json", "./rooms/L.json", "./rooms/M.json", "./rooms/N.json", "./rooms/P.json", "./rooms/Q.json", "./rooms/R.json", "./rooms/S.json", "./rooms/T.json", "./rooms/U.json", "./rooms/W.json", "./rooms/SL1.json", "./rooms/SL2.json", "./rooms/SL3.json", "./rooms/SL4.json", "./rooms/ST1.json", "./rooms/ST2.json", "./rooms/ST3.json", "./rooms/ST4.json"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
